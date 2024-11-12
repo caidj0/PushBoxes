@@ -4,5 +4,5 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 find_library(ncurses_path NAME ncurses REQUIRED)
 
-add_executable(PushBoxes main.cpp Map.cpp Block.cpp Blocks.cpp Screen.cpp)
+add_executable(PushBoxes main.cpp Map.cpp Block.cpp Blocks.cpp Screen.cpp MapUtils.cpp)
 target_link_libraries(PushBoxes PUBLIC ${ncurses_path})

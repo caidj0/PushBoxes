@@ -1,7 +1,9 @@
+#include <cstddef>
 #include "Block.h"
 #include "Blocks.h"
 #include "Map.h"
 #include "Screen.h"
+#include "MapUtils.h"
 
 PushBoxes::MapManager mapManager;
 
@@ -21,22 +23,35 @@ void spin() {
             mapManager.movePlayer(PushBoxes::LEFT);
         else if(key == PushBoxes::K_RIGHT)
             mapManager.movePlayer(PushBoxes::RIGHT);
+        else if(key == PushBoxes::K_CANCEL)
+            mapManager.cancel();
+        else if(key == PushBoxes::K_RESET)
+            mapManager.reset();
     }
 }
 
 int main(int, char**){
     PushBoxes::screenInit();
 
-    PushBoxes::Map& m = mapManager.addNewMap(5, 5);
-    for(int i = 0;i < 5;i++) {
-        m.blocks[0][i] = PushBoxes::WALL_BLOCK;
-        m.blocks[4][i] = PushBoxes::WALL_BLOCK;
-        m.blocks[i][0] = PushBoxes::WALL_BLOCK;
-        m.blocks[i][4] = PushBoxes::WALL_BLOCK;
-    }
+    size_t map_id1 = mapManager.addNewMap(10, 10);
+    PushBoxes::Utils::CloseMap(mapManager, map_id1);
 
-    mapManager.setPlayerPos(2, 2, &m);
-    mapManager.addBox(1, 2, &m);
+    mapManager.setPlayerPos({2,2,map_id1});
+    mapManager.setBlock({5,5,map_id1}, PushBoxes::BOX_BLOCK);
+    mapManager.setBlock({6,5,map_id1}, PushBoxes::BOX_BLOCK);
+    mapManager.setBlock({7,5,map_id1}, PushBoxes::BOX_BLOCK);
+    mapManager.setBlock({8,5,map_id1}, PushBoxes::BOX_BLOCK);
+    mapManager.setBlock({6,7,map_id1}, PushBoxes::BOX_BLOCK);
+    mapManager.setBlock({6,8,map_id1}, PushBoxes::BOX_BLOCK);
+
+    size_t map_id2 = mapManager.addNewMap(20, 40);
+    PushBoxes::Utils::CloseMap(mapManager, map_id2);
+
+    mapManager.setBlock({3,3,map_id1}, PushBoxes::Block(PushBoxes::MAP_BLOCK,map_id2));
+    mapManager.setBlock({3,3,map_id2}, PushBoxes::Block(PushBoxes::MAP_BLOCK,map_id1));
+
+    mapManager.changeOriShot();
+
     spin();
 
     PushBoxes::screenDestroy();

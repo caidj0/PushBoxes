@@ -1,22 +1,29 @@
 #pragma once
 
+#include <cstddef>
 #include <string_view>
 
 namespace PushBoxes {
-enum Direction{
-    UP, DOWN, LEFT, RIGHT
-};
+enum Direction { UP, DOWN, LEFT, RIGHT };
 
-struct Block {
-    std::string_view name;
+class Block {
+   private:
     char viewChar;
+
+   public:
+    std::string_view name;
     bool isReplaceable;
     bool isMoveable;
-    Block(const char* name, char viewChar, bool isReplaceable, bool isMoveable);
+    bool isAccessible;
+    size_t inner_map_id;
+    Block(const char* name, char viewChar, bool isReplaceable, bool isMoveable,
+          bool isAccessible);
+    Block(const Block& Right, size_t inner_map_id);
+    bool operator==(const Block& Right) const;
+    bool operator!=(const Block& Right) const;
+    char getViewChar() const;
 };
 
-enum POIType {
-    NEEDBLOCK, NEEDPLAYER
-};
+enum POIType { NEEDBLOCK, NEEDPLAYER };
 
-}
+}  // namespace PushBoxes

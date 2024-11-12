@@ -12,12 +12,11 @@ class Map {
     size_t row, column;
     std::vector<std::vector<PushBoxes::Block>> blocks;
     size_t id;
-    Map(size_t row, size_t column);
+    Map(size_t row, size_t column, size_t id);
 };
 
 struct BlockPosition {
-    size_t x, y;
-    Map* map;
+    size_t x, y, map_id;
 };
 
 struct POI {
@@ -27,28 +26,42 @@ struct POI {
 
 class MapManager {
    private:
-    bool _move(BlockPosition &pos, Direction md, bool changePos);
     struct Shot {
+        size_t id_counter;
         std::vector<Map> maps;
         std::vector<POI> pois;
         PushBoxes::BlockPosition playerPos;
-        Map& findMapById(size_t id);
+
+        bool _move(BlockPosition& pos, Direction md, bool changePos);
+        Map& getMapById(size_t id);
         Block& getBlockByPos(BlockPosition pos);
         BlockPosition getNearByBlock(BlockPosition pos, Direction md);
+        size_t addNewMap(size_t row, size_t column);
+
+        const Map& getMapById(size_t id) const;
     };
+    std::stack<Shot> _shots;
+    void _push_shot(const Shot& shot);
+    Shot _oriShot;
 
    public:
-    std::stack<Shot> old_shots;
-    std::vector<Map> maps;
-    std::vector<POI> pois;
-    PushBoxes::BlockPosition playerPos;
 
-    Map& addNewMap(size_t row, size_t column);
+    MapManager();
+    MapManager(const Shot& oriShot);
+
+    const std::vector<Map>& getMaps() const;
+    const std::vector<POI>& getPois() const;
+    BlockPosition getPlayerPos() const;
+    const Map& getMapById(size_t id) const;
+
+    size_t addNewMap(size_t row, size_t column);
+    void setPlayerPos(BlockPosition pos);
+    void setBlock(BlockPosition pos, Block blocktype);
+
     bool movePlayer(Direction md);
-    void setPlayerPos(size_t x, size_t y, Map* map);
-    void addBox(size_t x, size_t y, Map* map);
     bool cancel();
+    void reset();
+    void changeOriShot();
 };
-
 
 }  // namespace PushBoxes
