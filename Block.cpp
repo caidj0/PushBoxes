@@ -1,10 +1,11 @@
 #include "Block.h"
 
 #include <cstddef>
+#include <string>
 
 
 namespace PushBoxes {
-BlockType::BlockType(std::string_view name, char viewChar, bool isReplaceable,
+BlockType::BlockType(std::string name, char viewChar, bool isReplaceable,
                      bool isMoveable, bool isAccessible)
     : name(name),
       viewChar([viewChar](const Block& block) { return viewChar; }),
@@ -12,7 +13,7 @@ BlockType::BlockType(std::string_view name, char viewChar, bool isReplaceable,
       isMoveable(isMoveable),
       isAccessible(isAccessible){};
 
-BlockType::BlockType(std::string_view name,
+BlockType::BlockType(std::string name,
                      std::function<char(const Block& block)> viewChar,
                      bool isReplaceable, bool isMoveable, bool isAccessible)
     : name(name),
@@ -28,10 +29,10 @@ bool BlockType::operator!=(const BlockType& right) const {
     return right.name != name;
 }
 
-Block::Block(const BlockType& type, size_t locate_map_id)
-    : typePtr(&type), locate_map_id(locate_map_id), inner_map_id(0) {}
+Block::Block(const BlockType& type, std::string locate_map_id)
+    : typePtr(&type), locate_map_id(locate_map_id), inner_map_id() {}
 
-Block::Block(const BlockType& type, size_t locate_map_id, size_t inner_map_id)
+Block::Block(const BlockType& type, std::string locate_map_id, std::string inner_map_id)
     : typePtr(&type),
       locate_map_id(locate_map_id),
       inner_map_id(inner_map_id) {}

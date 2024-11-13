@@ -8,26 +8,25 @@
 
 #include "Block.h"
 #include "Blocks.h"
+#include "ShotFile.h"
 
 namespace PushBoxes {
-Map::Map(size_t row, size_t column, size_t id)
+Map::Map(size_t row, size_t column, std::string id)
     : row(row),
       column(column),
       id(id),
       blocks(row, std::vector<PushBoxes::Block>(column, {VOID_BLOCK, id})) {}
 
-Map& MapManager::Shot::getMapById(size_t id) {
+Map& MapManager::Shot::getMapById(std::string id) {
     for (auto& x : maps)
         if (x.id == id) return x;
-    throw std::out_of_range(
-        std::string("Can't find map with id: ").append(std::to_string(id)));
+    throw std::out_of_range(std::string("Can't find map with id: ").append(id));
 }
 
-const Map& MapManager::Shot::getMapById(size_t id) const {
+const Map& MapManager::Shot::getMapById(std::string id) const {
     for (auto& x : maps)
         if (x.id == id) return x;
-    throw std::out_of_range(
-        std::string("Can't find map with id: ").append(std::to_string(id)));
+    throw std::out_of_range(std::string("Can't find map with id: ").append(id));
 }
 
 Block& MapManager::Shot::getBlockByPos(BlockPosition pos) {
@@ -110,8 +109,19 @@ bool MapManager::Shot::_move(BlockPosition& pos, Direction md, bool changePos) {
     return false;
 }
 
-size_t MapManager::Shot::addNewMap(size_t row, size_t column) {
-    return maps.emplace_back(row, column, id_counter++).id;
+std::string MapManager::Shot::addNewMap(size_t row, size_t column) {
+    while (!addNewMap(row, column, std::to_string(id_counter))) {
+        id_counter++;
+    }
+    return getMapById(std::to_string(id_counter)).id;
+}
+
+bool MapManager::Shot::addNewMap(size_t row, size_t column, std::string id) {
+    for (const Map& x : maps) {
+        if (x.id == id) return false;
+    }
+    maps.emplace_back(row, column, id);
+    return true;
 }
 
 void MapManager::setPlayerPos(BlockPosition pos) {
@@ -137,7 +147,7 @@ void MapManager::setBlock(BlockPosition pos, const BlockType& blockType) {
     }
 }
 
-void MapManager::setMapBlockPos(BlockPosition pos, size_t map_id) {
+void MapManager::setMapBlockPos(BlockPosition pos, std::string map_id) {
     Map& map = getMapById(map_id);
     if (map.isInMap) {
         setBlock(map.pos, VOID_BLOCK);
@@ -159,6 +169,11 @@ bool MapManager::movePlayer(Direction md) {
 
 MapManager::MapManager() : _shots() { _shots.emplace(); }
 
+MapManager::MapManager(std::string shotPath) : _shots() {
+    _oriShot = ShotFile::read(shotPath);
+    _shots.push(_oriShot);
+}
+
 const std::vector<Map>& MapManager::getMaps() const {
     return _shots.top().maps;
 }
@@ -170,13 +185,17 @@ BlockPosition MapManager::getPlayerPos() const {
     return _shots.top().playerPos;
 }
 
-size_t MapManager::addNewMap(size_t row, size_t column) {
+std::string MapManager::addNewMap(size_t row, size_t column) {
     return _shots.top().addNewMap(row, column);
+}
+
+bool MapManager::addNewMap(size_t row, size_t column, std::string id) {
+    return _shots.top().addNewMap(row, column, id);
 }
 
 void MapManager::_push_shot(const Shot& shot) { _shots.push(shot); }
 
-bool MapManager::cancel() {
+bool MapManager::undo() {
     if (_shots.size() > 1) {
         _shots.pop();
         return true;
@@ -192,10 +211,24 @@ MapManager::MapManager(const Shot& oriShot) : _shots(), _oriShot(oriShot) {
 
 void MapManager::changeOriShot() { _oriShot = _shots.top(); }
 
-const Map& MapManager::getMapById(size_t id) const {
+const Map& MapManager::getMapById(std::string id) const {
     return _shots.top().getMapById(id);
 }
 
-Map& MapManager::getMapById(size_t id) { return _shots.top().getMapById(id); }
+Map& MapManager::getMapById(std::string id) {
+    return _shots.top().getMapById(id);
+}
+
+bool MapManager::saveShot(std::string path) {
+    return ShotFile::write(path, _shots.top());
+}
+
+void MapManager::readShot(std::string shotPath) {
+    Shot shot = ShotFile::read(shotPath);
+    while(!_shots.empty())
+        _shots.pop();
+    _oriShot = shot;
+    _shots.push(shot);
+}
 
 }  // namespace PushBoxes

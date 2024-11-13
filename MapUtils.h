@@ -1,13 +1,14 @@
 #pragma once
 
 #include <cstddef>
+#include <string>
 #include "Map.h"
 
 namespace PushBoxes {
 
 namespace Utils {
 
-void CloseMap(MapManager& mm, size_t map_id);
+void CloseMap(MapManager& mm, std::string map_id);
 
 }
 

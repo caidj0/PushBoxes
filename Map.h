@@ -1,6 +1,7 @@
 #pragma once
 #include <cstddef>
 #include <stack>
+#include <string>
 #include <vector>
 
 #include "Block.h"
@@ -8,17 +9,18 @@
 namespace PushBoxes {
 
 struct BlockPosition {
-    size_t x, y, map_id;
+    size_t x, y;
+    std::string map_id;
 };
 
 class Map {
    public:
     size_t row, column;
     std::vector<std::vector<PushBoxes::Block>> blocks;
-    size_t id;
+    std::string id;
     bool isInMap;
     BlockPosition pos;
-    Map(size_t row, size_t column, size_t id);
+    Map(size_t row, size_t column, std::string id);
 };
 
 struct POI {
@@ -35,39 +37,45 @@ class MapManager {
         PushBoxes::BlockPosition playerPos;
 
         bool _move(BlockPosition& pos, Direction md, bool changePos);
-        Map& getMapById(size_t id);
+        Map& getMapById(std::string id);
+        const Map& getMapById(std::string id) const;
         Block& getBlockByPos(BlockPosition pos);
         BlockPosition getNearbyBlock(BlockPosition pos, Direction md);
-        size_t addNewMap(size_t row, size_t column);
-        BlockPosition getAccessPosition(Block* targetBlock, Direction direction);
-
-        const Map& getMapById(size_t id) const;
+        std::string addNewMap(size_t row, size_t column);
+        bool addNewMap(size_t row, size_t column, std::string id);
+        BlockPosition getAccessPosition(Block* targetBlock,
+                                        Direction direction);
     };
     std::stack<Shot> _shots;
     Shot _oriShot;
     void _push_shot(const Shot& shot);
 
-
    public:
     MapManager();
     MapManager(const Shot& oriShot);
+    MapManager(std::string shotPath);
 
     const std::vector<Map>& getMaps() const;
     const std::vector<POI>& getPois() const;
     BlockPosition getPlayerPos() const;
-    const Map& getMapById(size_t id) const;
-    Map& getMapById(size_t id);
+    const Map& getMapById(std::string id) const;
+    Map& getMapById(std::string id);
 
-    size_t addNewMap(size_t row, size_t column);
+    std::string addNewMap(size_t row, size_t column);
+    bool addNewMap(size_t row, size_t column, std::string id);
     void setPlayerPos(BlockPosition pos);
     void setBlock(BlockPosition pos, Block block);
     void setBlock(BlockPosition pos, const BlockType& blockType);
-    void setMapBlockPos(BlockPosition pos, size_t map_id);
+    void setMapBlockPos(BlockPosition pos, std::string map_id);
 
     bool movePlayer(Direction md);
-    bool cancel();
+    bool undo();
     void reset();
     void changeOriShot();
+    bool saveShot(std::string path);
+    void readShot(std::string shotPath);
+
+    friend class ShotFile;
 };
 
 }  // namespace PushBoxes
