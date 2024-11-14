@@ -1,12 +1,9 @@
-#include <cstddef>
 #include <string>
 
 #include "Block.h"
 #include "Blocks.h"
 #include "Map.h"
-#include "MapUtils.h"
 #include "Screen.h"
-#include "ShotFile.h"
 
 PushBoxes::MapManager mapManager;
 

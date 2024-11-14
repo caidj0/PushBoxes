@@ -33,6 +33,31 @@ Block& MapManager::Shot::getBlockByPos(BlockPosition pos) {
     return getMapById(pos.map_id).blocks[pos.x][pos.y];
 }
 
+std::string MapManager::Shot::containMapWithVoid(std::string map_id) {
+    std::string meta_map_id = "Void_" + map_id;
+    addNewMap(7, 7, meta_map_id);
+    Map &meta_map = getMapById(meta_map_id);
+    for(size_t i = 0;i < 6;i++) {
+        meta_map.blocks[0][i].setBlockType(WALL_BLOCK);
+        meta_map.blocks[6][i].setBlockType(WALL_BLOCK);
+        meta_map.blocks[i][0].setBlockType(WALL_BLOCK);
+        meta_map.blocks[i][6].setBlockType(WALL_BLOCK);
+    }
+    Map &map = getMapById(map_id);
+    map.pos = {2,2, meta_map_id};
+    map.isInMap = 1;
+    meta_map.blocks[2][2].setBlockType(MAP_BLOCK);
+    meta_map.blocks[2][2].inner_map_id = map_id;
+    return meta_map_id;
+}
+
+BlockPosition MapManager::Shot::getBlockOutside(std::string map_id, Direction direction) {
+    Map& map = getMapById(map_id);
+    if(!map.isInMap)
+        containMapWithVoid(map_id);
+    return getNearbyBlock(map.pos, direction);
+}
+
 BlockPosition MapManager::Shot::getNearbyBlock(BlockPosition pos,
                                                Direction md) {
     BlockPosition targetPos = pos;
@@ -41,25 +66,25 @@ BlockPosition MapManager::Shot::getNearbyBlock(BlockPosition pos,
         if (targetPos.x > 0) {
             targetPos.x--;
         } else {
-            throw std::out_of_range("Pos extends map size.");
+            targetPos = getBlockOutside(pos.map_id, md);
         }
     } else if (md == DOWN) {
         if (targetPos.x + 1 < map.row) {
             targetPos.x++;
         } else {
-            throw std::out_of_range("Pos extends map size.");
+            targetPos = getBlockOutside(pos.map_id, md);
         }
     } else if (md == LEFT) {
         if (targetPos.y > 0) {
             targetPos.y--;
         } else {
-            throw std::out_of_range("Pos extends map size.");
+            targetPos = getBlockOutside(pos.map_id, md);
         }
     } else {
         if (targetPos.y + 1 < map.column) {
             targetPos.y++;
         } else {
-            throw std::out_of_range("Pos extends map size.");
+            targetPos = getBlockOutside(pos.map_id, md);
         }
     }
 
@@ -87,17 +112,22 @@ BlockPosition MapManager::Shot::getAccessPosition(Block* targetBlock,
     return pos;
 }
 
-bool MapManager::Shot::_move(BlockPosition& pos, Direction md, bool changePos) {
+
+bool MapManager::Shot::_move(BlockPosition& pos, Direction md) {
     BlockPosition targetPos = getNearbyBlock(pos, md);
     Block& block = getBlockByPos(pos);
     Block* targetBlock = &getBlockByPos(targetPos);
     while (targetBlock) {
         if (targetBlock->getBlockType().isReplaceable ||
             (targetBlock->getBlockType().isMoveable &&
-             _move(targetPos, md, false))) {
+             _move(targetPos, md))) {
             *targetBlock = block;
+            if(block.getBlockType() == PLAYER_BLOCK) {
+                playerPos = targetPos;
+            } else if(block.getBlockType() == MAP_BLOCK) {
+                getMapById(block.inner_map_id).pos = targetPos;
+            }
             block.setBlockType(VOID_BLOCK);
-            if (changePos) pos = targetPos;
             return true;
         } else if (targetBlock->getBlockType().isAccessible) {
             targetPos = getAccessPosition(targetBlock, md);
@@ -159,7 +189,7 @@ void MapManager::setMapBlockPos(BlockPosition pos, std::string map_id) {
 
 bool MapManager::movePlayer(Direction md) {
     Shot temp_shot = _shots.top();
-    bool flag = temp_shot._move(temp_shot.playerPos, md, true);
+    bool flag = temp_shot._move(temp_shot.playerPos, md);
     if (flag) {
         _push_shot(temp_shot);
         return true;

@@ -36,7 +36,7 @@ class MapManager {
         std::vector<POI> pois;
         PushBoxes::BlockPosition playerPos;
 
-        bool _move(BlockPosition& pos, Direction md, bool changePos);
+        bool _move(BlockPosition& pos, Direction md);
         Map& getMapById(std::string id);
         const Map& getMapById(std::string id) const;
         Block& getBlockByPos(BlockPosition pos);
@@ -45,6 +45,8 @@ class MapManager {
         bool addNewMap(size_t row, size_t column, std::string id);
         BlockPosition getAccessPosition(Block* targetBlock,
                                         Direction direction);
+        std::string containMapWithVoid(std::string map_id);
+        BlockPosition getBlockOutside(std::string map_id, Direction direction);
     };
     std::stack<Shot> _shots;
     Shot _oriShot;

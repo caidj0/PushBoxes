@@ -2,7 +2,7 @@
 
 #include <cstddef>
 #include <fstream>
-#include <stdexcept>
+#include <map>
 #include <string>
 
 #include "Block.h"
@@ -19,6 +19,7 @@ MapManager::Shot ShotFile::read(std::string path) {
     MapManager::Shot shot;
     size_t map_num, poi_num;
     f >> map_num >> poi_num;
+    std::map<std::string, BlockPosition> map_pos;
     for (size_t i = 0; i < map_num; i++) {
         size_t row, column;
         std::string id;
@@ -30,9 +31,10 @@ MapManager::Shot ShotFile::read(std::string path) {
             for (size_t y = 0; y < column; y++) {
                 f >> str;
                 if (str[0] == '[' && str[str.length() - 1] == ']') {
-                    map.blocks[x][y] =
-                        Block(MAP_BLOCK, id,
-                              str.substr(0, str.length() - 1).substr(1));
+                    std::string map_block_id =
+                        str.substr(0, str.length() - 1).substr(1);
+                    map.blocks[x][y] = Block(MAP_BLOCK, id, map_block_id);
+                    map_pos[map_block_id] = {x, y, id};
                 } else {
                     map.blocks[x][y].setBlockType(getBlockByName(str));
                     if (map.blocks[x][y].getBlockType() == PLAYER_BLOCK) {
@@ -44,6 +46,15 @@ MapManager::Shot ShotFile::read(std::string path) {
             }
         }
     }
+
+    for(auto & map : shot.maps) {
+        auto t = map_pos.find(map.id);
+        if(t != map_pos.end()) {
+            map.isInMap = 1;
+            map.pos = t->second;
+        }
+    }
+
     for (size_t i = 0; i < poi_num; i++) {
         std::string type;
         shot.pois.emplace_back();
