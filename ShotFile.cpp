@@ -33,7 +33,7 @@ MapManager::Shot ShotFile::read(std::string path) {
                 if (str[0] == '[' && str[str.length() - 1] == ']') {
                     std::string map_block_id =
                         str.substr(0, str.length() - 1).substr(1);
-                    map.blocks[x][y] = Block(MAP_BLOCK, id, map_block_id);
+                    map.blocks[x][y] = Block(MAP_BLOCK, map_block_id);
                     map_pos[map_block_id] = {x, y, id};
                 } else {
                     map.blocks[x][y].setBlockType(getBlockByName(str));

@@ -4,7 +4,9 @@
 #include <string>
 
 namespace PushBoxes {
-enum Direction { UP, DOWN, LEFT, RIGHT };
+enum Direction { NODIRECTION, UP, DOWN, LEFT, RIGHT };
+
+Direction inverseDirection(Direction direction);
 
 class Block;
 
@@ -30,11 +32,12 @@ class Block {
    private:
     const BlockType* typePtr;
    public:
-    std::string locate_map_id;
     std::string inner_map_id;
     
-    Block(const BlockType& type, std::string locate_map_id);
-    Block(const BlockType& type, std::string locate_map_id, std::string inner_map_id);
+    Direction moving_trend;
+
+    Block(const BlockType& type);
+    Block(const BlockType& type, std::string inner_map_id);
     char getViewChar() const;
     const BlockType& getBlockType() const;
     void setBlockType(const BlockType& type);

@@ -1,9 +1,12 @@
 #include "Map.h"
 
+#include <cassert>
 #include <cstddef>
 #include <cstdio>
+#include <stack>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "Block.h"
@@ -35,56 +38,56 @@ Block& MapManager::Shot::getBlockByPos(BlockPosition pos) {
 
 std::string MapManager::Shot::containMapWithVoid(std::string map_id) {
     std::string meta_map_id = "Void_" + map_id;
-    addNewMap(7, 7, meta_map_id);
-    Map &meta_map = getMapById(meta_map_id);
-    for(size_t i = 0;i < 6;i++) {
+    addNewMap(9, 9, meta_map_id);
+    Map& meta_map = getMapById(meta_map_id);
+    for (size_t i = 0; i < 9; i++) {
         meta_map.blocks[0][i].setBlockType(WALL_BLOCK);
-        meta_map.blocks[6][i].setBlockType(WALL_BLOCK);
+        meta_map.blocks[8][i].setBlockType(WALL_BLOCK);
         meta_map.blocks[i][0].setBlockType(WALL_BLOCK);
-        meta_map.blocks[i][6].setBlockType(WALL_BLOCK);
+        meta_map.blocks[i][8].setBlockType(WALL_BLOCK);
     }
-    Map &map = getMapById(map_id);
-    map.pos = {2,2, meta_map_id};
+    Map& map = getMapById(map_id);
+    map.pos = {4, 4, meta_map_id};
     map.isInMap = 1;
-    meta_map.blocks[2][2].setBlockType(MAP_BLOCK);
-    meta_map.blocks[2][2].inner_map_id = map_id;
+    meta_map.blocks[4][4].setBlockType(MAP_BLOCK);
+    meta_map.blocks[4][4].inner_map_id = map_id;
     return meta_map_id;
 }
 
-BlockPosition MapManager::Shot::getBlockOutside(std::string map_id, Direction direction) {
+BlockPosition MapManager::Shot::getBlockOutside(std::string map_id,
+                                                Direction direction) {
     Map& map = getMapById(map_id);
-    if(!map.isInMap)
-        containMapWithVoid(map_id);
+    if (!map.isInMap) containMapWithVoid(map_id);
     return getNearbyBlock(map.pos, direction);
 }
 
 BlockPosition MapManager::Shot::getNearbyBlock(BlockPosition pos,
-                                               Direction md) {
+                                               Direction direction) {
     BlockPosition targetPos = pos;
     Map& map = getMapById(pos.map_id);
-    if (md == UP) {
+    if (direction == UP) {
         if (targetPos.x > 0) {
             targetPos.x--;
         } else {
-            targetPos = getBlockOutside(pos.map_id, md);
+            targetPos = getBlockOutside(pos.map_id, direction);
         }
-    } else if (md == DOWN) {
+    } else if (direction == DOWN) {
         if (targetPos.x + 1 < map.row) {
             targetPos.x++;
         } else {
-            targetPos = getBlockOutside(pos.map_id, md);
+            targetPos = getBlockOutside(pos.map_id, direction);
         }
-    } else if (md == LEFT) {
+    } else if (direction == LEFT) {
         if (targetPos.y > 0) {
             targetPos.y--;
         } else {
-            targetPos = getBlockOutside(pos.map_id, md);
+            targetPos = getBlockOutside(pos.map_id, direction);
         }
     } else {
         if (targetPos.y + 1 < map.column) {
             targetPos.y++;
         } else {
-            targetPos = getBlockOutside(pos.map_id, md);
+            targetPos = getBlockOutside(pos.map_id, direction);
         }
     }
 
@@ -112,31 +115,104 @@ BlockPosition MapManager::Shot::getAccessPosition(Block* targetBlock,
     return pos;
 }
 
+int MapManager::Shot::moveBlock(BlockPosition targetPos, BlockPosition fromPos, Block fromBlock) {
+    Block &targetRef = getBlockByPos(targetPos);
+    Block &fromRef = getBlockByPos(fromPos);
+    
+    targetRef = fromBlock;
+    targetRef.moving_trend = NODIRECTION;
 
-bool MapManager::Shot::_move(BlockPosition& pos, Direction md) {
-    BlockPosition targetPos = getNearbyBlock(pos, md);
-    Block& block = getBlockByPos(pos);
-    Block* targetBlock = &getBlockByPos(targetPos);
-    while (targetBlock) {
-        if (targetBlock->getBlockType().isReplaceable ||
-            (targetBlock->getBlockType().isMoveable &&
-             _move(targetPos, md))) {
-            *targetBlock = block;
-            if(block.getBlockType() == PLAYER_BLOCK) {
-                playerPos = targetPos;
-            } else if(block.getBlockType() == MAP_BLOCK) {
-                getMapById(block.inner_map_id).pos = targetPos;
-            }
-            block.setBlockType(VOID_BLOCK);
-            return true;
-        } else if (targetBlock->getBlockType().isAccessible) {
-            targetPos = getAccessPosition(targetBlock, md);
-            targetBlock = &getBlockByPos(targetPos);
-        } else {
-            targetBlock = nullptr;
-        }
+    if(fromBlock.getBlockType() == PLAYER_BLOCK) {
+        playerPos = targetPos;
+    } else if(fromBlock.getBlockType() == MAP_BLOCK) {
+        getMapById(fromBlock.inner_map_id).pos = targetPos;
     }
-    return false;
+
+    if(fromRef.moving_trend == NODIRECTION) {
+        return 2;
+    } else {
+        fromRef.setBlockType(VOID_BLOCK);
+        fromRef.moving_trend = NODIRECTION;
+        return 3;
+    }
+}
+
+// 返回值: 3 成功腾出这个位置; 2 inBlock 未能成功腾出这个位置,
+// 但是有其他变化; 1 未能成功腾出这个位置, 且没有其他变化, 但是有备选位置;
+// 0 未能成功腾出这个位置, 且没有其他变化
+std::pair<int, BlockPosition> MapManager::Shot::move(BlockPosition pos,
+                                                     Direction direction) {
+    Block& ref = getBlockByPos(pos);
+    Block blockBackup = ref;
+
+    if (ref.getBlockType().isReplaceable) return {3, BlockPosition()};
+
+    if (!ref.getBlockType().isMoveable) return {0, BlockPosition()};
+
+    if (ref.moving_trend != NODIRECTION && ref.moving_trend != direction)
+        return {0, BlockPosition()};
+
+    if (ref.moving_trend == direction) {
+        return {3, BlockPosition()};
+    }
+
+    ref.moving_trend = direction;
+
+    int flag = 1;
+
+    std::stack<BlockPosition> targetPoses; 
+    targetPoses.push(getNearbyBlock(pos, direction));
+
+    while (flag == 1) {
+        auto ret = move(targetPoses.top(), direction);
+        if (ret.first == 1)
+            targetPoses.top() = ret.second;
+        else
+            flag = ret.first;
+    }
+
+    if (flag == 3) {
+        return {moveBlock(targetPoses.top(), pos, blockBackup), BlockPosition()};
+    }
+
+    if(flag == 2) {
+        return {2, BlockPosition()};
+    }
+
+    assert(ref.moving_trend == direction);
+    assert(flag == 0);
+
+    while(!targetPoses.empty() && !getBlockByPos(targetPoses.top()).getBlockType().isMoveable)
+        targetPoses.pop();
+
+    if(!targetPoses.empty()) {
+        if (getBlockByPos(targetPoses.top()).getBlockType().isMoveable && ref.getBlockType().isAccessible) {
+            BlockPosition innerPos =
+                getAccessPosition(&ref, inverseDirection(direction));
+            flag = 1;
+            while (flag == 1) {
+                auto ret = move(innerPos, inverseDirection(direction));
+                if (ret.first == 1)
+                    innerPos = ret.second;
+                else
+                    flag = ret.first;
+            }
+            if (flag == 3) {
+                moveBlock(innerPos, targetPoses.top(), getBlockByPos(targetPoses.top()));
+                return {moveBlock(targetPoses.top(), pos, blockBackup), BlockPosition()};
+            }
+        }
+
+    }
+
+    assert(flag == 2 || flag == 0);
+
+    ref.moving_trend = NODIRECTION;
+
+    if (flag == 0 && ref.getBlockType().isAccessible)
+        return {1, getAccessPosition(&ref, direction)};
+
+    return {flag, BlockPosition()};
 }
 
 std::string MapManager::Shot::addNewMap(size_t row, size_t column) {
@@ -184,13 +260,13 @@ void MapManager::setMapBlockPos(BlockPosition pos, std::string map_id) {
     }
     map.pos = pos;
     map.isInMap = 1;
-    setBlock(pos, PushBoxes::Block(PushBoxes::MAP_BLOCK, pos.map_id, map_id));
+    setBlock(pos, PushBoxes::Block(PushBoxes::MAP_BLOCK, map_id));
 }
 
-bool MapManager::movePlayer(Direction md) {
+bool MapManager::movePlayer(Direction direction) {
     Shot temp_shot = _shots.top();
-    bool flag = temp_shot._move(temp_shot.playerPos, md);
-    if (flag) {
+    int flag = temp_shot.move(temp_shot.playerPos, direction).first;
+    if (flag == 2 || flag == 3) {
         _push_shot(temp_shot);
         return true;
     }
@@ -204,13 +280,9 @@ MapManager::MapManager(std::string shotPath) : _shots() {
     _shots.push(_oriShot);
 }
 
-const std::vector<Map>& MapManager::getMaps() const {
-    return _shots.top().maps;
-}
+const std::list<Map>& MapManager::getMaps() const { return _shots.top().maps; }
 
-const std::vector<POI>& MapManager::getPois() const {
-    return _shots.top().pois;
-}
+const std::list<POI>& MapManager::getPois() const { return _shots.top().pois; }
 BlockPosition MapManager::getPlayerPos() const {
     return _shots.top().playerPos;
 }
@@ -255,8 +327,7 @@ bool MapManager::saveShot(std::string path) {
 
 void MapManager::readShot(std::string shotPath) {
     Shot shot = ShotFile::read(shotPath);
-    while(!_shots.empty())
-        _shots.pop();
+    while (!_shots.empty()) _shots.pop();
     _oriShot = shot;
     _shots.push(shot);
 }

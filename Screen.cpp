@@ -33,6 +33,7 @@ void screenDestroy() {
 }
 
 void printMaps(const MapManager& mm) {
+    clear();
 
     size_t x= 0, y = 0;
 
@@ -40,7 +41,6 @@ void printMaps(const MapManager& mm) {
         printMapAt(x,y, t);
         x += t.column + 3;
     }
-    // refresh();
 }
 
 void printMapAt(int x, int y, const Map& map) {

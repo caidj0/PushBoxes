@@ -1,7 +1,10 @@
 #pragma once
 #include <cstddef>
+#include <list>
+#include <map>
 #include <stack>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "Block.h"
@@ -32,15 +35,16 @@ class MapManager {
    private:
     struct Shot {
         size_t id_counter;
-        std::vector<Map> maps;
-        std::vector<POI> pois;
+        std::list<Map> maps;
+        std::list<POI> pois;
         PushBoxes::BlockPosition playerPos;
 
-        bool _move(BlockPosition& pos, Direction md);
+        int moveBlock(BlockPosition targetPos, BlockPosition fromPos, Block fromBlock);
+        std::pair<int, BlockPosition> move(BlockPosition pos, Direction direction);
         Map& getMapById(std::string id);
         const Map& getMapById(std::string id) const;
         Block& getBlockByPos(BlockPosition pos);
-        BlockPosition getNearbyBlock(BlockPosition pos, Direction md);
+        BlockPosition getNearbyBlock(BlockPosition pos, Direction direction);
         std::string addNewMap(size_t row, size_t column);
         bool addNewMap(size_t row, size_t column, std::string id);
         BlockPosition getAccessPosition(Block* targetBlock,
@@ -57,8 +61,8 @@ class MapManager {
     MapManager(const Shot& oriShot);
     MapManager(std::string shotPath);
 
-    const std::vector<Map>& getMaps() const;
-    const std::vector<POI>& getPois() const;
+    const std::list<Map>& getMaps() const;
+    const std::list<POI>& getPois() const;
     BlockPosition getPlayerPos() const;
     const Map& getMapById(std::string id) const;
     Map& getMapById(std::string id);
