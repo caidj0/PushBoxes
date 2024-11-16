@@ -3,8 +3,10 @@
 #include <curses.h>
 
 #include <cstddef>
+#include <list>
 #include <string>
 
+#include "Block.h"
 #include "Map.h"
 
 namespace PushBoxes {
@@ -41,15 +43,32 @@ void printMaps(const MapManager& mm) {
         printMapAt(x, y, t);
         x += t.column + 3;
     }
+
+    if(mm.isWin) {
+        attron(A_STANDOUT);
+        attron(A_BOLD);
+        mvaddstr(0, 0, "You win!");
+        attroff(A_BOLD);
+        attroff(A_STANDOUT);
+    }
 }
 
 void printMapAt(int x, int y, const Map& map) {
     for (int i = 0; i < map.row; i++) {
         for (int j = 0; j < map.column; j++) {
-            if(map.blocks[i][j].getVisualMode().isHighlight) 
-                attron(A_STANDOUT);
-            mvaddch(y + i, x + j, map.blocks[i][j].getViewChar(gametime));
-            attroff(A_STANDOUT);
+            if (map.blocks[i][j].getVisualMode().canBeCovered &&
+                map.pois.count({i, j})) {
+                if (map.pois.at({i, j}) == NEEDBLOCK) {
+                    mvaddch(y + i, x + j, '_');
+                } else {
+                    mvaddch(y + i, x + j, '=');
+                }
+            } else {
+                if (map.blocks[i][j].getVisualMode().isHighlight)
+                    attron(A_STANDOUT);
+                mvaddch(y + i, x + j, map.blocks[i][j].getViewChar(gametime));
+                attroff(A_STANDOUT);
+            }
         }
     }
 

@@ -13,6 +13,7 @@ class Block;
 
 struct VisualMode {
     bool isHighlight;
+    bool canBeCovered;
 };
 
 class BlockType {

@@ -137,6 +137,25 @@ EnterPosition MapManager::Shot::getAccessPosition(Block* targetBlock,
     return enter_pos;
 }
 
+bool MapManager::Shot::isWin() const {
+    size_t poi_num = 0, achieved_num = 0;
+    for (const auto& map : maps) {
+        for (const auto& poi : map.pois) {
+            poi_num++;
+
+            achieved_num +=
+                (poi.second == NEEDPLAYER &&
+                 map.blocks[poi.first.first][poi.first.second].getBlockType() ==
+                     PLAYER_BLOCK) ||
+                (poi.second == NEEDBLOCK &&
+                 map.blocks[poi.first.first][poi.first.second]
+                     .getBlockType()
+                     .isMoveable);
+        }
+    }
+    return (poi_num != 0 && poi_num == achieved_num);
+}
+
 int MapManager::Shot::moveBlock(BlockPosition targetPos, BlockPosition fromPos,
                                 Block fromBlock) {
     Block& targetRef = getBlockByPos(targetPos);
@@ -298,6 +317,7 @@ bool MapManager::movePlayer(Direction direction) {
     int flag =
         temp_shot.move(EnterPosition(temp_shot.playerPos), direction).first;
     if (flag == 2 || flag == 3) {
+        isWin = temp_shot.isWin();
         _push_shot(temp_shot);
         return true;
     }
@@ -313,7 +333,6 @@ MapManager::MapManager(std::string shotPath) : _shots() {
 
 const std::list<Map>& MapManager::getMaps() const { return _shots.top().maps; }
 
-const std::list<POI>& MapManager::getPois() const { return _shots.top().pois; }
 BlockPosition MapManager::getPlayerPos() const {
     return _shots.top().playerPos;
 }
@@ -331,12 +350,16 @@ void MapManager::_push_shot(const Shot& shot) { _shots.push(shot); }
 bool MapManager::undo() {
     if (_shots.size() > 1) {
         _shots.pop();
+        isWin = _shots.top().isWin();
         return true;
     }
     return false;
 }
 
-void MapManager::reset() { _push_shot(_oriShot); }
+void MapManager::reset() {
+    _push_shot(_oriShot);
+    isWin = 0;
+}
 
 MapManager::MapManager(const Shot& oriShot) : _shots(), _oriShot(oriShot) {
     _shots.push(oriShot);

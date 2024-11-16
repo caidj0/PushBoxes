@@ -17,8 +17,8 @@ MapManager::Shot ShotFile::read(std::string path) {
     f.open(path);
     if (!f.is_open()) throw FileExcption();
     MapManager::Shot shot;
-    size_t map_num, poi_num;
-    f >> map_num >> poi_num;
+    size_t map_num;
+    f >> map_num;
     std::map<std::string, BlockPosition> map_pos;
     for (size_t i = 0; i < map_num; i++) {
         size_t row, column;
@@ -35,11 +35,11 @@ MapManager::Shot ShotFile::read(std::string path) {
                         str.substr(0, str.length() - 1).substr(1);
                     map.blocks[x][y] = Block(MAP_BLOCK, map_block_id);
                     map_pos[map_block_id] = {x, y, id};
-                } else if (str[0] == '(' && str[str.length() - 1] == ')'){
+                } else if (str[0] == '(' && str[str.length() - 1] == ')') {
                     std::string map_block_id =
                         str.substr(0, str.length() - 1).substr(1);
                     map.blocks[x][y] = Block(CLONE_BLOCK, map_block_id);
-                } else  {
+                } else {
                     map.blocks[x][y].setBlockType(getBlockByName(str));
                     if (map.blocks[x][y].getBlockType() == PLAYER_BLOCK) {
                         shot.playerPos.x = x;
@@ -49,28 +49,31 @@ MapManager::Shot ShotFile::read(std::string path) {
                 }
             }
         }
+        size_t poi_num;
+        f >> poi_num;
+        for (size_t i = 0; i < poi_num; i++) {
+            std::string type;
+            size_t poi_x, poi_y;
+            POIType poiType;
+            f >> type;
+            if (type == "block") {
+                poiType = NEEDBLOCK;
+            } else if (type == "player") {
+                poiType = NEEDPLAYER;
+            }
+            f >> poi_x >> poi_y;
+            map.pois.insert({{poi_x, poi_y}, poiType});
+        }
     }
 
-    for(auto & map : shot.maps) {
+    for (auto& map : shot.maps) {
         auto t = map_pos.find(map.id);
-        if(t != map_pos.end()) {
+        if (t != map_pos.end()) {
             map.isInMap = 1;
             map.pos = t->second;
         }
     }
 
-    for (size_t i = 0; i < poi_num; i++) {
-        std::string type;
-        shot.pois.emplace_back();
-        POI& poi = shot.pois.back();
-        f >> type;
-        if (type == "block") {
-            poi.type = NEEDBLOCK;
-        } else if (type == "player") {
-            poi.type = NEEDPLAYER;
-        }
-        f >> poi.pos.x >> poi.pos.y >> poi.pos.map_id;
-    }
     return shot;
 }
 
@@ -78,7 +81,7 @@ bool ShotFile::write(std::string path, const MapManager::Shot& shot) {
     std::ofstream f;
     f.open(path);
     if (!f.is_open()) return false;
-    f << shot.maps.size() << " " << shot.pois.size() << "\n";
+    f << shot.maps.size() << "\n";
     for (const auto& map : shot.maps) {
         f << map.row << " " << map.column << " " << map.id << "\n";
         for (size_t x = 0; x < map.row; x++) {
@@ -91,16 +94,17 @@ bool ShotFile::write(std::string path, const MapManager::Shot& shot) {
             }
             f << "\n";
         }
+        f << map.pois.size() << "\n";
+        for (const auto& poi : map.pois) {
+            if (poi.second == NEEDBLOCK) {
+                f << "block ";
+            } else if (poi.second == NEEDPLAYER) {
+                f << "player ";
+            }
+            f << poi.first.first << " " << poi.first.second << "\n";
+        }
     }
 
-    for (const auto& poi : shot.pois) {
-        if (poi.type == NEEDBLOCK) {
-            f << "block ";
-        } else if (poi.type == NEEDPLAYER) {
-            f << "player ";
-        }
-        f << poi.pos.x << " " << poi.pos.y << " " << poi.pos.map_id << "\n";
-    }
     f.close();
     return true;
 }

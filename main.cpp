@@ -1,5 +1,6 @@
-#include <string>
 #include <unistd.h>
+
+#include <string>
 
 #include "Block.h"
 #include "Blocks.h"
@@ -45,18 +46,20 @@ void spin() {
         PushBoxes::Key key = PushBoxes::getKey();
         if (key == PushBoxes::K_QUIT) return;
 
-        if (key == PushBoxes::K_DOWN)
-            mapManager.movePlayer(PushBoxes::DOWN);
-        else if (key == PushBoxes::K_UP)
-            mapManager.movePlayer(PushBoxes::UP);
-        else if (key == PushBoxes::K_LEFT)
-            mapManager.movePlayer(PushBoxes::LEFT);
-        else if (key == PushBoxes::K_RIGHT)
-            mapManager.movePlayer(PushBoxes::RIGHT);
-        else if (key == PushBoxes::K_CANCEL)
+        if (key == PushBoxes::K_CANCEL)
             mapManager.undo();
         else if (key == PushBoxes::K_RESET)
             mapManager.reset();
+        else if (!mapManager.isWin) {
+            if (key == PushBoxes::K_DOWN)
+                mapManager.movePlayer(PushBoxes::DOWN);
+            else if (key == PushBoxes::K_UP)
+                mapManager.movePlayer(PushBoxes::UP);
+            else if (key == PushBoxes::K_LEFT)
+                mapManager.movePlayer(PushBoxes::LEFT);
+            else if (key == PushBoxes::K_RIGHT)
+                mapManager.movePlayer(PushBoxes::RIGHT);
+        }
         usleep(16666);
     }
 }
@@ -65,7 +68,7 @@ int main(int, char**) {
     PushBoxes::screenInit();
 
     // init1();
-    mapManager.readShot("c.sf");
+    mapManager.readShot("Center_6.sf");
 
     spin();
 
