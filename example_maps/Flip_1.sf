@@ -1,0 +1,14 @@
+1
+9 9 0
+wall wall wall wall wall wall wall wall wall
+wall void void void void void void void wall 
+wall void void void void void void void wall 
+wall void void player void void void void wall 
+void void void ]0[ wall wall wall void void 
+wall wall wall void wall void wall wall wall 
+wall wall void void void void void wall wall 
+wall wall wall wall wall void void wall wall 
+wall wall wall wall wall wall wall wall wall 
+2
+player 1 4
+block 5 5

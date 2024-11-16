@@ -20,9 +20,15 @@ struct EnterPosition {
     bool vaild;
     BlockPosition pos;
     double ratio;
+    Direction direction;
+    bool isFilped;
     EnterPosition();
-    explicit EnterPosition(BlockPosition pos);
-    EnterPosition(BlockPosition pos, double ratio);
+    explicit EnterPosition(BlockPosition pos, Direction direction);
+    EnterPosition(BlockPosition pos, Direction direction, double ratio);
+    EnterPosition(BlockPosition pos, Direction direction, double ratio, bool isFilped);
+
+    Direction getDirection() const;
+    double getRatio() const;
 };
 
 class Map {
@@ -36,7 +42,6 @@ class Map {
     Map(size_t row, size_t column, std::string id);
 };
 
-
 class MapManager {
    private:
     struct Shot {
@@ -44,18 +49,18 @@ class MapManager {
         std::list<Map> maps;
         PushBoxes::BlockPosition playerPos;
 
-        int moveBlock(BlockPosition targetPos, BlockPosition fromPos, Block fromBlock);
-        std::pair<int, EnterPosition> move(EnterPosition enter_pos, Direction direction);
+        int moveBlock(EnterPosition targetPos, EnterPosition fromPos,
+                      Block fromBlock);
+        std::pair<int, EnterPosition> move(EnterPosition enter_pos);
         Map& getMapById(std::string id);
         const Map& getMapById(std::string id) const;
         Block& getBlockByPos(BlockPosition pos);
-        EnterPosition getNearbyBlock(EnterPosition enter_pos, Direction direction);
+        EnterPosition getNearbyBlock(EnterPosition enter_pos);
         std::string addNewMap(size_t row, size_t column);
         bool addNewMap(size_t row, size_t column, std::string id);
-        EnterPosition getAccessPosition(Block* targetBlock,
-                                        Direction direction, double ratio);
+        EnterPosition getAccessPosition(EnterPosition enter_pos);
         std::string containMapWithVoid(std::string map_id);
-        EnterPosition getBlockOutside(EnterPosition pos, Direction direction);
+        EnterPosition getBlockOutside(EnterPosition pos);
         bool isWin() const;
     };
     std::stack<Shot> _shots;
@@ -65,7 +70,6 @@ class MapManager {
    public:
     bool isWin;
 
-    
     MapManager();
     MapManager(const Shot& oriShot);
     MapManager(std::string shotPath);
@@ -77,6 +81,8 @@ class MapManager {
 
     std::string addNewMap(size_t row, size_t column);
     bool addNewMap(size_t row, size_t column, std::string id);
+    bool addPoi(std::string map_id, size_t row, size_t column, POIType type);
+    bool deletePoi(std::string map_id, size_t row, size_t column);
     void setPlayerPos(BlockPosition pos);
     void setBlock(BlockPosition pos, Block block);
     void setBlock(BlockPosition pos, const BlockType& blockType);

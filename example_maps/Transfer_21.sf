@@ -1,0 +1,31 @@
+4
+5 5 0
+wall wall wall wall wall
+wall wall wall wall wall
+wall wall [1] wall wall
+wall wall [2] [3] wall
+wall wall wall wall wall
+0
+3 3 1
+void void void
+void void void
+void void void
+0
+9 9 2
+void void box wall void void void void void
+void void void void void void wall wall void
+void void void void void void wall void void
+void void void void void void wall void void
+void void void void player void wall void void
+void void void void void void wall void void
+void void void void void void wall void void
+void void void void void void wall wall void
+void void void void void void void void void
+2
+block 2 7
+player 6 7
+3 3 3 
+void void void
+void wall void
+void void void
+0

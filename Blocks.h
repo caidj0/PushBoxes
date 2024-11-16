@@ -12,11 +12,15 @@ const BlockType BOX_BLOCK("box", 'B', 0, 1, 0, {0, 0});
 const BlockType PLAYER_BLOCK("player", '@', 0, 1, 0, {0, 0});
 const BlockType MAP_BLOCK("map",
                           [](const Block& block, size_t time) {
-                              return block.inner_map_id[0];
+                                if(block.isFliped && (time / 60 & 1))
+                                    return '/';
+                                return block.inner_map_id[0];
                           },
                           0, 1, 1, {0, 0});
 const BlockType CLONE_BLOCK("clone",
                             [](const Block& block, size_t time) {
+                                if(block.isFliped && (time / 60 & 1))
+                                    return '/';
                                 return block.inner_map_id[0];
                             },
                             0, 1, 1, {1, 0});

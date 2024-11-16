@@ -30,15 +30,19 @@ MapManager::Shot ShotFile::read(std::string path) {
         for (size_t x = 0; x < row; x++) {
             for (size_t y = 0; y < column; y++) {
                 f >> str;
-                if (str[0] == '[' && str[str.length() - 1] == ']') {
+                if ((str[0] == '[' && str[str.length() - 1] == ']') ||
+                    (str[0] == ']' && str[str.length() - 1] == '[')) {
                     std::string map_block_id =
                         str.substr(0, str.length() - 1).substr(1);
                     map.blocks[x][y] = Block(MAP_BLOCK, map_block_id);
                     map_pos[map_block_id] = {x, y, id};
-                } else if (str[0] == '(' && str[str.length() - 1] == ')') {
+                    map.blocks[x][y].isFliped = (str[0] == ']');
+                } else if ((str[0] == '(' && str[str.length() - 1] == ')') ||
+                           (str[0] == ')' && str[str.length() - 1] == '(')) {
                     std::string map_block_id =
                         str.substr(0, str.length() - 1).substr(1);
                     map.blocks[x][y] = Block(CLONE_BLOCK, map_block_id);
+                    map.blocks[x][y].isFliped = (str[0] == ')');
                 } else {
                     map.blocks[x][y].setBlockType(getBlockByName(str));
                     if (map.blocks[x][y].getBlockType() == PLAYER_BLOCK) {
@@ -87,7 +91,15 @@ bool ShotFile::write(std::string path, const MapManager::Shot& shot) {
         for (size_t x = 0; x < map.row; x++) {
             for (size_t y = 0; y < map.column; y++) {
                 if (map.blocks[x][y].getBlockType() == MAP_BLOCK) {
-                    f << "[" << map.blocks[x][y].inner_map_id << "] ";
+                    if (map.blocks[x][y].isFliped)
+                        f << "]" << map.blocks[x][y].inner_map_id << "[ ";
+                    else
+                        f << "[" << map.blocks[x][y].inner_map_id << "] ";
+                } else if (map.blocks[x][y].getBlockType() == CLONE_BLOCK) {
+                    if (map.blocks[x][y].isFliped)
+                        f << "(" << map.blocks[x][y].inner_map_id << ") ";
+                    else
+                        f << ")" << map.blocks[x][y].inner_map_id << "( ";
                 } else {
                     f << map.blocks[x][y].getBlockType().name << " ";
                 }

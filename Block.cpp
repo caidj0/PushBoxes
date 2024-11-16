@@ -11,6 +11,12 @@ Direction inverseDirection(Direction direction) {
     return LEFT;
 }
 
+Direction flipDirection(Direction direction) {
+    if (direction == LEFT) return RIGHT;
+    if (direction == RIGHT) return LEFT;
+    return direction;
+}
+
 BlockType::BlockType(std::string name, char viewChar, bool isReplaceable,
                      bool isMoveable, bool isAccessible, VisualMode visualMode)
     : name(name),
@@ -40,10 +46,10 @@ bool BlockType::operator!=(const BlockType& right) const {
 }
 
 Block::Block(const BlockType& type)
-    : typePtr(&type), inner_map_id(), moving_trend(NODIRECTION) {}
+    : typePtr(&type), inner_map_id(), moving_trend(NODIRECTION), rotate(0), isFliped(0) {}
 
 Block::Block(const BlockType& type, std::string inner_map_id)
-    : typePtr(&type), inner_map_id(inner_map_id), moving_trend(NODIRECTION) {}
+    : typePtr(&type), inner_map_id(inner_map_id), moving_trend(NODIRECTION), rotate(0), isFliped(0) {}
 
 VisualMode Block::getVisualMode() const { return typePtr->visualMode; }
 

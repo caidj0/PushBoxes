@@ -8,6 +8,7 @@ namespace PushBoxes {
 enum Direction { NODIRECTION, UP, DOWN, LEFT, RIGHT };
 
 Direction inverseDirection(Direction direction);
+Direction flipDirection(Direction direction);
 
 class Block;
 
@@ -42,6 +43,12 @@ class Block {
 
    public:
     std::string inner_map_id;
+
+    // 0 ~ 3 代表逆时针旋转了 0, 90, 180, 270 度.
+    int rotate;
+
+    // 是否左右翻转
+    bool isFliped;
 
     Direction moving_trend;
 
