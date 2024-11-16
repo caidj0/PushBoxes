@@ -15,6 +15,15 @@ struct BlockPosition {
     std::string map_id;
 };
 
+struct EnterPosition {
+    bool vaild;
+    BlockPosition pos;
+    double ratio;
+    EnterPosition();
+    explicit EnterPosition(BlockPosition pos);
+    EnterPosition(BlockPosition pos, double ratio);
+};
+
 class Map {
    public:
     size_t row, column;
@@ -39,17 +48,17 @@ class MapManager {
         PushBoxes::BlockPosition playerPos;
 
         int moveBlock(BlockPosition targetPos, BlockPosition fromPos, Block fromBlock);
-        std::pair<int, BlockPosition> move(BlockPosition pos, Direction direction);
+        std::pair<int, EnterPosition> move(EnterPosition enter_pos, Direction direction);
         Map& getMapById(std::string id);
         const Map& getMapById(std::string id) const;
         Block& getBlockByPos(BlockPosition pos);
-        BlockPosition getNearbyBlock(BlockPosition pos, Direction direction);
+        EnterPosition getNearbyBlock(EnterPosition enter_pos, Direction direction);
         std::string addNewMap(size_t row, size_t column);
         bool addNewMap(size_t row, size_t column, std::string id);
-        BlockPosition getAccessPosition(Block* targetBlock,
-                                        Direction direction);
+        EnterPosition getAccessPosition(Block* targetBlock,
+                                        Direction direction, double ratio);
         std::string containMapWithVoid(std::string map_id);
-        BlockPosition getBlockOutside(std::string map_id, Direction direction);
+        EnterPosition getBlockOutside(EnterPosition pos, Direction direction);
     };
     std::stack<Shot> _shots;
     Shot _oriShot;
