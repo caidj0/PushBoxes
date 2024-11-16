@@ -35,7 +35,11 @@ MapManager::Shot ShotFile::read(std::string path) {
                         str.substr(0, str.length() - 1).substr(1);
                     map.blocks[x][y] = Block(MAP_BLOCK, map_block_id);
                     map_pos[map_block_id] = {x, y, id};
-                } else {
+                } else if (str[0] == '(' && str[str.length() - 1] == ')'){
+                    std::string map_block_id =
+                        str.substr(0, str.length() - 1).substr(1);
+                    map.blocks[x][y] = Block(CLONE_BLOCK, map_block_id);
+                } else  {
                     map.blocks[x][y].setBlockType(getBlockByName(str));
                     if (map.blocks[x][y].getBlockType() == PLAYER_BLOCK) {
                         shot.playerPos.x = x;

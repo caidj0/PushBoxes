@@ -1,4 +1,5 @@
 #include <string>
+#include <unistd.h>
 
 #include "Block.h"
 #include "Blocks.h"
@@ -56,6 +57,7 @@ void spin() {
             mapManager.undo();
         else if (key == PushBoxes::K_RESET)
             mapManager.reset();
+        usleep(16666);
     }
 }
 
@@ -63,7 +65,7 @@ int main(int, char**) {
     PushBoxes::screenInit();
 
     // init1();
-    mapManager.readShot("a.sf");
+    mapManager.readShot("c.sf");
 
     spin();
 

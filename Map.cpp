@@ -115,20 +115,21 @@ BlockPosition MapManager::Shot::getAccessPosition(Block* targetBlock,
     return pos;
 }
 
-int MapManager::Shot::moveBlock(BlockPosition targetPos, BlockPosition fromPos, Block fromBlock) {
-    Block &targetRef = getBlockByPos(targetPos);
-    Block &fromRef = getBlockByPos(fromPos);
-    
+int MapManager::Shot::moveBlock(BlockPosition targetPos, BlockPosition fromPos,
+                                Block fromBlock) {
+    Block& targetRef = getBlockByPos(targetPos);
+    Block& fromRef = getBlockByPos(fromPos);
+
     targetRef = fromBlock;
     targetRef.moving_trend = NODIRECTION;
 
-    if(fromBlock.getBlockType() == PLAYER_BLOCK) {
+    if (fromBlock.getBlockType() == PLAYER_BLOCK) {
         playerPos = targetPos;
-    } else if(fromBlock.getBlockType() == MAP_BLOCK) {
+    } else if (fromBlock.getBlockType() == MAP_BLOCK) {
         getMapById(fromBlock.inner_map_id).pos = targetPos;
     }
 
-    if(fromRef.moving_trend == NODIRECTION) {
+    if (fromRef.moving_trend == NODIRECTION) {
         return 2;
     } else {
         fromRef.setBlockType(VOID_BLOCK);
@@ -160,7 +161,7 @@ std::pair<int, BlockPosition> MapManager::Shot::move(BlockPosition pos,
 
     int flag = 1;
 
-    std::stack<BlockPosition> targetPoses; 
+    std::stack<BlockPosition> targetPoses;
     targetPoses.push(getNearbyBlock(pos, direction));
 
     while (flag == 1) {
@@ -172,21 +173,24 @@ std::pair<int, BlockPosition> MapManager::Shot::move(BlockPosition pos,
     }
 
     if (flag == 3) {
-        return {moveBlock(targetPoses.top(), pos, blockBackup), BlockPosition()};
+        return {moveBlock(targetPoses.top(), pos, blockBackup),
+                BlockPosition()};
     }
 
-    if(flag == 2) {
+    if (flag == 2) {
         return {2, BlockPosition()};
     }
 
     assert(ref.moving_trend == direction);
     assert(flag == 0);
 
-    while(!targetPoses.empty() && !getBlockByPos(targetPoses.top()).getBlockType().isMoveable)
+    while (!targetPoses.empty() &&
+           !getBlockByPos(targetPoses.top()).getBlockType().isMoveable)
         targetPoses.pop();
 
-    if(!targetPoses.empty()) {
-        if (getBlockByPos(targetPoses.top()).getBlockType().isMoveable && ref.getBlockType().isAccessible) {
+    if (!targetPoses.empty()) {
+        if (getBlockByPos(targetPoses.top()).getBlockType().isMoveable &&
+            ref.getBlockType().isAccessible) {
             BlockPosition innerPos =
                 getAccessPosition(&ref, inverseDirection(direction));
             flag = 1;
@@ -198,11 +202,12 @@ std::pair<int, BlockPosition> MapManager::Shot::move(BlockPosition pos,
                     flag = ret.first;
             }
             if (flag == 3) {
-                moveBlock(innerPos, targetPoses.top(), getBlockByPos(targetPoses.top()));
-                return {moveBlock(targetPoses.top(), pos, blockBackup), BlockPosition()};
+                moveBlock(innerPos, targetPoses.top(),
+                          getBlockByPos(targetPoses.top()));
+                return {moveBlock(targetPoses.top(), pos, blockBackup),
+                        BlockPosition()};
             }
         }
-
     }
 
     assert(flag == 2 || flag == 0);
@@ -239,13 +244,15 @@ void MapManager::setPlayerPos(BlockPosition pos) {
 }
 
 void MapManager::setBlock(BlockPosition pos, Block block) {
-    if (block.getBlockType() != PLAYER_BLOCK) {
+    if (block.getBlockType() != PLAYER_BLOCK &&
+        block.getBlockType() != MAP_BLOCK) {
         _shots.top().getMapById(pos.map_id).blocks[pos.x][pos.y] = block;
     }
 }
 
 void MapManager::setBlock(BlockPosition pos, const BlockType& blockType) {
-    if (blockType != PLAYER_BLOCK && blockType != MAP_BLOCK) {
+    if (blockType != PLAYER_BLOCK && blockType != MAP_BLOCK &&
+        blockType != CLONE_BLOCK) {
         _shots.top()
             .getMapById(pos.map_id)
             .blocks[pos.x][pos.y]

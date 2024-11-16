@@ -1,12 +1,16 @@
 #pragma once
 #include <curses.h>
 
+#include <cstddef>
 #include <utility>
 #include "Map.h"
+#include "Block.h"
 
 namespace PushBoxes {
 
-enum Key { K_UP, K_DOWN, K_LEFT, K_RIGHT, K_QUIT, K_CANCEL, K_RESET };
+static size_t gametime;
+
+enum Key { K_NONE, K_UP, K_DOWN, K_LEFT, K_RIGHT, K_QUIT, K_CANCEL, K_RESET };
 
 const std::pair<int, Key> KeyMap[] = {
     {KEY_UP, K_UP},       {KEY_DOWN, K_DOWN}, {KEY_LEFT, K_LEFT},
