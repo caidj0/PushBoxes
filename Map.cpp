@@ -212,8 +212,11 @@ std::pair<int, EnterPosition> MapManager::Shot::move(EnterPosition enter_pos) {
     if (!ref.getBlockType().isMoveable) return {0, EnterPosition()};
 
     if (ref.moving_trend != NODIRECTION &&
-        ref.moving_trend != enter_pos.getDirection())
+        ref.moving_trend != enter_pos.getDirection()) {
+        if (ref.getBlockType().isAccessible)
+            return {1, getAccessPosition(enter_pos)};
         return {0, EnterPosition()};
+    }
 
     if (ref.moving_trend == enter_pos.getDirection()) {
         return {3, EnterPosition()};
@@ -252,8 +255,11 @@ std::pair<int, EnterPosition> MapManager::Shot::move(EnterPosition enter_pos) {
         targetPoses.pop();
 
     if (!targetPoses.empty()) {
-        if (getBlockByPos(targetPoses.top().pos).getBlockType().isMoveable &&
+        Block& targetRef = getBlockByPos(targetPoses.top().pos);
+        if (targetRef.getBlockType().isMoveable &&
             ref.getBlockType().isAccessible) {
+            Block targetBlock = targetRef;
+            targetRef.moving_trend = inverseDirection(enter_pos.getDirection());
             EnterPosition innerPos = getAccessPosition(
                 EnterPosition(enter_pos.pos,
                               inverseDirection(enter_pos.getDirection()), 0.5));
@@ -266,11 +272,15 @@ std::pair<int, EnterPosition> MapManager::Shot::move(EnterPosition enter_pos) {
                     flag = ret.first;
             }
             if (flag == 3) {
-                moveBlock(innerPos, targetPoses.top(),
-                          getBlockByPos(targetPoses.top().pos));
-                return {moveBlock(targetPoses.top(), enter_pos, blockBackup),
+                flag = moveBlock(innerPos, targetPoses.top(),
+                                 targetBlock);
+                if (flag == 3) {
+                    return {
+                        moveBlock(targetPoses.top(), enter_pos, blockBackup),
                         EnterPosition()};
+                }
             }
+            targetRef.moving_trend = NODIRECTION;
         }
     }
 
