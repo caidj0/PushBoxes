@@ -56,8 +56,15 @@ void printMaps(const MapManager& mm) {
 void printMapAt(int x, int y, const Map& map) {
     for (int i = 0; i < map.row; i++) {
         for (int j = 0; j < map.column; j++) {
+            POIType poi_type = POINONE;
+            if (map.pois.count({i, j}))
+                poi_type = map.pois.at({i,j});
+
+            if(meetPOIDemand(poi_type, map.blocks[i][j]))
+                attron(A_BOLD);            
+
             if (map.blocks[i][j].getVisualMode().canBeCovered &&
-                map.pois.count({i, j})) {
+                poi_type != POINONE) {
                 if (map.pois.at({i, j}) == NEEDBLOCK) {
                     mvaddch(y + i, x + j, '_');
                 } else {
@@ -69,6 +76,7 @@ void printMapAt(int x, int y, const Map& map) {
                 mvaddch(y + i, x + j, map.blocks[i][j].getViewChar(gametime));
                 attroff(A_STANDOUT);
             }
+            attroff(A_BOLD);
         }
     }
 

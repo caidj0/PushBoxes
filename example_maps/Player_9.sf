@@ -1,0 +1,17 @@
+2 1
+5 5 0
+wall wall wall wall wall
+wall [1] void void wall
+wall wall void void wall
+wall box (1){0} void wall
+wall wall wall wall wall
+0
+5 5 1
+void void void void void
+void void void void void
+void void void void void
+void void void void void
+void void void void void
+2 
+player 1 2
+block 2 2

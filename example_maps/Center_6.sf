@@ -1,11 +1,11 @@
-1
+1 1
 7 7 0
 wall void void void void void void
 wall void void wall void void void
 wall void void void void void void
 wall void void void void wall void
 wall void void void void void void
-wall [0] void void player box void
+wall [0] void void box{0} box void
 wall wall wall wall wall wall wall
 2
 player 1 5

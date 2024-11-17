@@ -1,11 +1,11 @@
-6
+6 1
 7 7 0
 wall wall wall box wall wall wall
 wall wall [5] box [4] wall wall
 wall wall wall box [3] wall wall
 wall wall wall [1] wall wall wall
 void void [2] box void wall wall
-player void wall ]0[ wall wall wall
+box{0} void wall ]0[ wall wall wall
 (0) void wall wall wall wall wall
 0
 5 5 1

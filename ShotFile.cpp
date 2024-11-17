@@ -17,8 +17,9 @@ MapManager::Shot ShotFile::read(std::string path) {
     f.open(path);
     if (!f.is_open()) throw FileExcption();
     MapManager::Shot shot;
-    size_t map_num;
-    f >> map_num;
+    size_t map_num, player_num;
+    f >> map_num >> player_num;
+    shot.playerPoses.resize(player_num);
     std::map<std::string, BlockPosition> map_pos;
     for (size_t i = 0; i < map_num; i++) {
         size_t row, column;
@@ -30,6 +31,20 @@ MapManager::Shot ShotFile::read(std::string path) {
         for (size_t x = 0; x < row; x++) {
             for (size_t y = 0; y < column; y++) {
                 f >> str;
+                int playerStatus = 0;
+                size_t playerIndex;
+                if (str[str.length() - 1] == '}') {
+                    if (str[str.length() - 2] == '{') {
+                        playerStatus = 1;
+                    } else {
+                        playerStatus = 2;
+                        playerIndex =
+                            std::stoull(str.substr(0, str.length() - 1)
+                                            .substr(str.find_last_of('{') + 1));
+                    }
+                    str = str.substr(0, str.find_last_of('{'));
+                }
+
                 if ((str[0] == '[' && str[str.length() - 1] == ']') ||
                     (str[0] == ']' && str[str.length() - 1] == '[')) {
                     std::string map_block_id =
@@ -45,11 +60,11 @@ MapManager::Shot ShotFile::read(std::string path) {
                     map.blocks[x][y].isFliped = (str[0] == ')');
                 } else {
                     map.blocks[x][y].setBlockType(getBlockByName(str));
-                    if (map.blocks[x][y].getBlockType() == PLAYER_BLOCK) {
-                        shot.playerPos.x = x;
-                        shot.playerPos.y = y;
-                        shot.playerPos.map_id = id;
-                    }
+                }
+                map.blocks[x][y].playerStatus = playerStatus;
+                if (playerStatus == 2) {
+                    map.blocks[x][y].playerIndex = playerIndex;
+                    shot.playerPoses[playerIndex] = {x, y, id};
                 }
             }
         }
@@ -85,24 +100,31 @@ bool ShotFile::write(std::string path, const MapManager::Shot& shot) {
     std::ofstream f;
     f.open(path);
     if (!f.is_open()) return false;
-    f << shot.maps.size() << "\n";
+    f << shot.maps.size() << " " << shot.playerPoses.size() << "\n";
     for (const auto& map : shot.maps) {
         f << map.row << " " << map.column << " " << map.id << "\n";
         for (size_t x = 0; x < map.row; x++) {
             for (size_t y = 0; y < map.column; y++) {
                 if (map.blocks[x][y].getBlockType() == MAP_BLOCK) {
                     if (map.blocks[x][y].isFliped)
-                        f << "]" << map.blocks[x][y].inner_map_id << "[ ";
+                        f << "]" << map.blocks[x][y].inner_map_id << "[";
                     else
-                        f << "[" << map.blocks[x][y].inner_map_id << "] ";
+                        f << "[" << map.blocks[x][y].inner_map_id << "]";
                 } else if (map.blocks[x][y].getBlockType() == CLONE_BLOCK) {
                     if (map.blocks[x][y].isFliped)
-                        f << "(" << map.blocks[x][y].inner_map_id << ") ";
+                        f << "(" << map.blocks[x][y].inner_map_id << ")";
                     else
-                        f << ")" << map.blocks[x][y].inner_map_id << "( ";
+                        f << ")" << map.blocks[x][y].inner_map_id << "(";
                 } else {
-                    f << map.blocks[x][y].getBlockType().name << " ";
+                    f << map.blocks[x][y].getBlockType().name;
                 }
+                if (map.blocks[x][y].playerStatus == 2) {
+                    f << "{" << map.blocks[x][y].playerStatus << "}";
+                } else if (map.blocks[x][y].playerStatus == 1) {
+                    f << "{}";
+                }
+
+                f << " ";
             }
             f << "\n";
         }

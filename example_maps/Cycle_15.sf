@@ -1,0 +1,16 @@
+1 1
+9 9 0
+wall wall wall wall wall wall wall wall wall
+wall wall void wall wall wall wall wall wall 
+wall wall box{0} wall wall wall wall wall wall 
+wall wall void wall wall wall wall wall wall 
+wall (0) void box box box box box [0] 
+wall wall void wall void wall void void wall 
+wall wall box wall wall wall wall wall wall 
+wall wall box wall wall wall wall wall wall 
+wall wall box wall wall wall wall wall wall 
+4
+player 1 2
+block 5 4
+block 5 6
+block 5 7

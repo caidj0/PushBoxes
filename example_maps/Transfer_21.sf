@@ -1,4 +1,4 @@
-4
+4 1
 5 5 0
 wall wall wall wall wall
 wall wall wall wall wall
@@ -16,7 +16,7 @@ void void box wall void void void void void
 void void void void void void wall wall void
 void void void void void void wall void void
 void void void void void void wall void void
-void void void void player void wall void void
+void void void void box{0} void wall void void
 void void void void void void wall void void
 void void void void void void wall void void
 void void void void void void wall wall void

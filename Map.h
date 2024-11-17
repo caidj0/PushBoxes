@@ -47,7 +47,7 @@ class MapManager {
     struct Shot {
         size_t id_counter;
         std::list<Map> maps;
-        PushBoxes::BlockPosition playerPos;
+        std::vector<PushBoxes::BlockPosition> playerPoses;
 
         int moveBlock(EnterPosition targetPos, EnterPosition fromPos,
                       Block fromBlock);
@@ -75,7 +75,7 @@ class MapManager {
     MapManager(std::string shotPath);
 
     const std::list<Map>& getMaps() const;
-    BlockPosition getPlayerPos() const;
+    const std::vector<BlockPosition>& getPlayerPoses() const;
     const Map& getMapById(std::string id) const;
     Map& getMapById(std::string id);
 
@@ -83,7 +83,7 @@ class MapManager {
     bool addNewMap(size_t row, size_t column, std::string id);
     bool addPoi(std::string map_id, size_t row, size_t column, POIType type);
     bool deletePoi(std::string map_id, size_t row, size_t column);
-    void setPlayerPos(BlockPosition pos);
+    void addPlayer(BlockPosition pos);
     void setBlock(BlockPosition pos, Block block);
     void setBlock(BlockPosition pos, const BlockType& blockType);
     void setMapBlockPos(BlockPosition pos, std::string map_id);
