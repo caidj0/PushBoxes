@@ -1,0 +1,25 @@
+3 1 
+7 7 0
+wall wall wall wall wall wall wall
+wall void void box void [1]{} wall
+wall void void void void void wall
+wall void void [2]{0} void box wall
+wall void void void void void wall
+wall void box void void box wall
+wall wall wall wall wall wall wall
+0
+5 5 1
+void void void void void
+void void void void void
+void void wall void void
+void void void void void
+void void void void void
+0
+5 5 2
+void void void void void
+void void void void void
+void void wall void void
+void void void void void
+void void void void void
+1
+player 1 1

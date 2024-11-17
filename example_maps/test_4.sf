@@ -1,0 +1,8 @@
+1 1
+5 5 0
+wall wall wall wall wall
+wall box{} box{} box{} wall
+wall box{0} box{} box{} wall
+wall box{} box{} box{} wall
+wall wall wall wall wall
+0

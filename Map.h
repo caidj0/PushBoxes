@@ -51,7 +51,8 @@ class MapManager {
 
         int moveBlock(EnterPosition targetPos, EnterPosition fromPos,
                       Block fromBlock);
-        std::pair<int, EnterPosition> move(EnterPosition enter_pos);
+        void transferPlayer(EnterPosition targetPos, EnterPosition fromPos);
+        std::pair<int, EnterPosition> move(EnterPosition enter_pos, bool force_move = false);
         Map& getMapById(std::string id);
         const Map& getMapById(std::string id) const;
         Block& getBlockByPos(BlockPosition pos);

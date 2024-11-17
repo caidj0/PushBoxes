@@ -199,17 +199,27 @@ int MapManager::Shot::moveBlock(EnterPosition targetPos, EnterPosition fromPos,
     }
 }
 
+void MapManager::Shot::transferPlayer(EnterPosition targetPos, EnterPosition fromPos) {
+    Block& targetRef = getBlockByPos(targetPos.pos);
+    Block& fromRef = getBlockByPos(fromPos.pos);
+
+    targetRef.playerStatus = 2;
+    fromRef.playerStatus = 1;
+    targetRef.playerIndex = fromRef.playerIndex;
+    playerPoses.at(fromRef.playerIndex) = targetPos.pos;
+}
+
 // 返回值: 3 成功腾出这个位置; 2 inBlock 未能成功腾出这个位置,
 // 但是有其他变化; 1 未能成功腾出这个位置, 且没有其他变化, 但是有备选位置;
 // 0 未能成功腾出这个位置, 且没有其他变化
-std::pair<int, EnterPosition> MapManager::Shot::move(EnterPosition enter_pos) {
+std::pair<int, EnterPosition> MapManager::Shot::move(EnterPosition enter_pos, bool force_move) {
     assert(enter_pos.direction != NODIRECTION);
     Block& ref = getBlockByPos(enter_pos.pos);
     Block blockBackup = ref;
 
     if (ref.getBlockType().isReplaceable) return {3, EnterPosition()};
 
-    if (!ref.getBlockType().isMoveable) return {0, EnterPosition()};
+    if (!force_move && !ref.getBlockType().isMoveable) return {0, EnterPosition()};
 
     if (ref.moving_trend != NODIRECTION &&
         ref.moving_trend != enter_pos.getDirection()) {
@@ -250,12 +260,19 @@ std::pair<int, EnterPosition> MapManager::Shot::move(EnterPosition enter_pos) {
 
     assert(flag == 0);
 
-    while (!targetPoses.empty() &&
-           !getBlockByPos(targetPoses.top().pos).getBlockType().isMoveable)
+    EnterPosition accessPos, takeupPos;
+    while (!targetPoses.empty()) {
+        if (!accessPos.vaild &&
+            getBlockByPos(targetPoses.top().pos).getBlockType().isMoveable)
+            accessPos = targetPoses.top();
+        if (!takeupPos.vaild &&
+            getBlockByPos(targetPoses.top().pos).playerStatus == 1)
+            takeupPos = targetPoses.top();
         targetPoses.pop();
+    }
 
-    if (!targetPoses.empty()) {
-        Block& targetRef = getBlockByPos(targetPoses.top().pos);
+    if (flag == 0 && accessPos.vaild) {
+        Block& targetRef = getBlockByPos(accessPos.pos);
         if (targetRef.getBlockType().isMoveable &&
             ref.getBlockType().isAccessible) {
             Block targetBlock = targetRef;
@@ -272,16 +289,20 @@ std::pair<int, EnterPosition> MapManager::Shot::move(EnterPosition enter_pos) {
                     flag = ret.first;
             }
             if (flag == 3) {
-                flag = moveBlock(innerPos, targetPoses.top(),
-                                 targetBlock);
+                flag = moveBlock(innerPos, accessPos, targetBlock);
                 if (flag == 3) {
                     return {
-                        moveBlock(targetPoses.top(), enter_pos, blockBackup),
+                        moveBlock(accessPos, enter_pos, blockBackup),
                         EnterPosition()};
                 }
             }
             targetRef.moving_trend = NODIRECTION;
         }
+    }
+
+    if(flag == 0 && ref.playerStatus == 2 && takeupPos.vaild) {
+        transferPlayer(takeupPos, enter_pos);
+        flag = 2;
     }
 
     assert(flag == 2 || flag == 0);
@@ -347,7 +368,7 @@ bool MapManager::movePlayer(Direction direction) {
     Shot temp_shot = _shots.top();
     int flag = 0;
     for (auto x : temp_shot.playerPoses) {
-        flag |= temp_shot.move(EnterPosition(x, direction)).first;
+        flag |= temp_shot.move(EnterPosition(x, direction), 1).first;
     }
     if (flag & 2) {
         isWin = temp_shot.isWin();
