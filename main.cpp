@@ -36,7 +36,7 @@ void spin() {
 int main(int, char**) {
     PushBoxes::screenInit();
 
-    mapManager.readShot("test_7.sf");
+    mapManager.readShot("test_8.sf");
 
     spin();
 

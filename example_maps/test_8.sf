@@ -1,0 +1,15 @@
+2 1
+8 8 0
+wall wall wall void void void void void 
+wall (0{1}) void void void void void void
+wall [1] void void void void void void 
+wall wall void void void void void void 
+void void void void void void void void 
+void void void void void void void void 
+void void void void void void void void 
+void void void [0] void void box{0} void
+0
+2 2 1
+void void
+void void
+0

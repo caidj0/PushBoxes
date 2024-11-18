@@ -191,22 +191,24 @@ FixedPosition MapManager::Shot::getAccessPosition(FixedPosition old_enter_pos) {
                             old_enter_pos.direction, old_enter_pos.ratio,
                             targetBlock.isFliped ^ old_enter_pos.isFilped);
 
-    if (enter_pos.getDirection() == DOWN) {
-        enter_pos.pos.x = 0;
-        enter_pos.pos.y = map.column * enter_pos.getRatio();
-        enter_pos.ratio = enter_pos.getRatio() * map.column - enter_pos.pos.y;
-    } else if (enter_pos.getDirection() == UP) {
-        enter_pos.pos.x = map.row - 1;
-        enter_pos.pos.y = map.column * enter_pos.getRatio();
-        enter_pos.ratio = enter_pos.getRatio() * map.column - enter_pos.pos.y;
+    if ((enter_pos.getDirection() == DOWN) || (enter_pos.getDirection() == UP)) {
+        enter_pos.pos.x = (enter_pos.getDirection() == DOWN) ? 0 : map.row - 1;
+        if(enter_pos.getRatio() < 1.0) {
+            enter_pos.pos.y = map.column * enter_pos.getRatio();
+            enter_pos.ratio = enter_pos.getRatio() * map.column - enter_pos.pos.y;
+        } else {
+            enter_pos.pos.y = map.column - 1;
+            enter_pos.ratio = 1.0;
+        }
     } else if (enter_pos.getDirection() == RIGHT) {
-        enter_pos.pos.x = map.row * enter_pos.getRatio();
-        enter_pos.pos.y = 0;
-        enter_pos.ratio = enter_pos.getRatio() * map.row - enter_pos.pos.x;
-    } else {
-        enter_pos.pos.x = map.row * enter_pos.getRatio();
-        enter_pos.pos.y = map.column - 1;
-        enter_pos.ratio = enter_pos.getRatio() * map.row - enter_pos.pos.x;
+        enter_pos.pos.y = (enter_pos.getDirection() == RIGHT) ? 0 : map.column - 1;
+        if(enter_pos.getRatio() < 1.0) {
+            enter_pos.pos.x = map.row * enter_pos.getRatio();
+            enter_pos.ratio = enter_pos.getRatio() * map.row - enter_pos.pos.x;
+        } else {
+            enter_pos.pos.x = map.row - 1;
+            enter_pos.ratio = 1.0;
+        }
     }
     return enter_pos;
 }
