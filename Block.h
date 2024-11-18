@@ -43,6 +43,7 @@ class Block {
 
    public:
     std::string inner_map_id;
+    long long inf_level;
 
     // 0 ~ 3 代表逆时针旋转了 0, 90, 180, 270 度.
     int rotate;
@@ -58,6 +59,7 @@ class Block {
 
     Block(const BlockType& type);
     Block(const BlockType& type, std::string inner_map_id);
+    Block(const BlockType& type, std::string inner_map_id, long long inf_level);
     VisualMode getVisualMode() const;
     char getViewChar(size_t time) const;
     const BlockType& getBlockType() const;

@@ -64,7 +64,8 @@ Block::Block(const BlockType& type)
       rotate(0),
       isFliped(0),
       playerStatus(0),
-      playerIndex(0) {}
+      playerIndex(0),
+      inf_level(0) {}
 
 Block::Block(const BlockType& type, std::string inner_map_id)
     : typePtr(&type),
@@ -73,7 +74,18 @@ Block::Block(const BlockType& type, std::string inner_map_id)
       rotate(0),
       isFliped(0),
       playerIndex(0),
-      playerStatus(0) {}
+      playerStatus(0),
+      inf_level(0) {}
+
+Block::Block(const BlockType& type, std::string inner_map_id, long long inf_level)
+    : typePtr(&type),
+      inner_map_id(inner_map_id),
+      moving_trend(NODIRECTION),
+      rotate(0),
+      isFliped(0),
+      playerIndex(0),
+      playerStatus(0),
+      inf_level(inf_level) {}
 
 VisualMode Block::getVisualMode() const { return typePtr->visualMode; }
 
@@ -86,7 +98,8 @@ const BlockType& Block::getBlockType() const { return *typePtr; }
 void Block::setBlockType(const BlockType& type) { typePtr = &type; }
 
 bool meetPOIDemand(POIType type, const Block& block) {
-    return (type == NEEDBLOCK && block.getBlockType().isMoveable && block.playerStatus != 2) ||
+    return (type == NEEDBLOCK && block.getBlockType().isMoveable &&
+            block.playerStatus != 2) ||
            (type == NEEDPLAYER && block.playerStatus == 2);
 }
 

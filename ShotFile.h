@@ -5,13 +5,6 @@
 #include "Map.h"
 namespace PushBoxes {
 
-/*
-    The structure of .sf file:
-    mapNum poiNum
-    For everymap, row, column, id, blocks
-    For everypoi, posm, type
- */
-
 class ShotFile {
    private:
     static MapManager::Shot read(std::string path);

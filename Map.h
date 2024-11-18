@@ -14,21 +14,25 @@ namespace PushBoxes {
 struct BlockPosition {
     size_t x, y;
     std::string map_id;
+    bool operator<(const BlockPosition& Right) const;
+    bool operator==(const BlockPosition& Right) const;
 };
 
-struct EnterPosition {
+struct FixedPosition {
     bool vaild;
     BlockPosition pos;
     double ratio;
     Direction direction;
     bool isFilped;
-    EnterPosition();
-    explicit EnterPosition(BlockPosition pos, Direction direction);
-    EnterPosition(BlockPosition pos, Direction direction, double ratio);
-    EnterPosition(BlockPosition pos, Direction direction, double ratio, bool isFilped);
+    FixedPosition();
+    explicit FixedPosition(BlockPosition pos, Direction direction);
+    FixedPosition(BlockPosition pos, Direction direction, double ratio);
+    FixedPosition(BlockPosition pos, Direction direction, double ratio, bool isFilped);
 
     Direction getDirection() const;
     double getRatio() const;
+    bool operator<(const FixedPosition& Right) const;
+    bool operator==(const FixedPosition& Right) const;
 };
 
 class Map {
@@ -38,7 +42,10 @@ class Map {
     std::map<std::pair<size_t, size_t>, POIType> pois;
     std::string id;
     bool isInMap;
+    bool isMetaMap;
     BlockPosition pos;
+    std::vector<BlockPosition> infPoses;
+    std::vector<BlockPosition> epsPoses;
     Map(size_t row, size_t column, std::string id);
 };
 
@@ -49,20 +56,24 @@ class MapManager {
         std::list<Map> maps;
         std::vector<PushBoxes::BlockPosition> playerPoses;
 
-        int moveBlock(EnterPosition targetPos, EnterPosition fromPos,
+        int moveBlock(FixedPosition targetPos, FixedPosition fromPos,
                       Block fromBlock);
-        void transferPlayer(EnterPosition targetPos, EnterPosition fromPos);
-        std::pair<int, EnterPosition> move(EnterPosition enter_pos, bool force_move = false);
+        void transferPlayer(FixedPosition targetPos, FixedPosition fromPos);
+        std::pair<int, FixedPosition> move(FixedPosition enter_pos, bool force_move = false);
         Map& getMapById(std::string id);
         const Map& getMapById(std::string id) const;
         Block& getBlockByPos(BlockPosition pos);
-        EnterPosition getNearbyBlock(EnterPosition enter_pos);
+        const Block& getBlockByPos(BlockPosition pos) const;
+        FixedPosition getNearbyBlock(FixedPosition enter_pos);
         std::string addNewMap(size_t row, size_t column);
         bool addNewMap(size_t row, size_t column, std::string id);
-        EnterPosition getAccessPosition(EnterPosition enter_pos);
-        std::string containMapWithVoid(std::string map_id);
-        EnterPosition getBlockOutside(EnterPosition pos);
+        FixedPosition getAccessPosition(FixedPosition enter_pos);
+        std::string containBlockWithMeta(Block ref);
+        std::string containMapWithMeta(std::string map_id);
+        FixedPosition getPosOutside(FixedPosition pos);
         bool isWin() const;
+        FixedPosition getInfinityBlock(FixedPosition fixed_pos);
+        bool isAccessible(BlockPosition pos) const;
     };
     std::stack<Shot> _shots;
     Shot _oriShot;

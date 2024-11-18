@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdio>
+#include <set>
 #include <stack>
 #include <stdexcept>
 #include <string>
@@ -11,20 +12,31 @@
 
 #include "Block.h"
 #include "Blocks.h"
+#include "Exceptions.h"
 #include "ShotFile.h"
 
 namespace PushBoxes {
 
-EnterPosition::EnterPosition() : vaild(0), pos(), ratio() {}
+bool BlockPosition::operator<(const BlockPosition& Right) const {
+    return (map_id < Right.map_id) ||
+           (map_id == Right.map_id &&
+            (x < Right.x || (x == Right.x && y < Right.y)));
+}
 
-EnterPosition::EnterPosition(BlockPosition pos, Direction direction)
+bool BlockPosition::operator==(const BlockPosition& Right) const {
+    return map_id == Right.map_id && x == Right.x && y == Right.y;
+}
+
+FixedPosition::FixedPosition() : vaild(0), pos(), ratio() {}
+
+FixedPosition::FixedPosition(BlockPosition pos, Direction direction)
     : vaild(1), pos(pos), ratio(0.5), direction(direction), isFilped(0) {}
 
-EnterPosition::EnterPosition(BlockPosition pos, Direction direction,
+FixedPosition::FixedPosition(BlockPosition pos, Direction direction,
                              double ratio)
     : vaild(1), pos(pos), ratio(ratio), direction(direction), isFilped(0){};
 
-EnterPosition::EnterPosition(BlockPosition pos, Direction direction,
+FixedPosition::FixedPosition(BlockPosition pos, Direction direction,
                              double ratio, bool isFliped)
     : vaild(1),
       pos(pos),
@@ -32,7 +44,15 @@ EnterPosition::EnterPosition(BlockPosition pos, Direction direction,
       direction(direction),
       isFilped(isFliped){};
 
-Direction EnterPosition::getDirection() const {
+bool FixedPosition::operator<(const FixedPosition& Right) const {
+    return pos < Right.pos || (pos == Right.pos && ratio < Right.ratio);
+}
+
+bool FixedPosition::operator==(const FixedPosition& Right) const {
+    return pos == Right.pos && ratio == Right.ratio;
+}
+
+Direction FixedPosition::getDirection() const {
     if (isFilped) {
         if (direction == LEFT) return RIGHT;
         if (direction == RIGHT) return LEFT;
@@ -40,7 +60,7 @@ Direction EnterPosition::getDirection() const {
     return direction;
 }
 
-double EnterPosition::getRatio() const {
+double FixedPosition::getRatio() const {
     if (isFilped && (direction == UP || direction == DOWN)) return 1 - ratio;
     return ratio;
 }
@@ -49,7 +69,13 @@ Map::Map(size_t row, size_t column, std::string id)
     : row(row),
       column(column),
       id(id),
-      blocks(row, std::vector<PushBoxes::Block>(column, {VOID_BLOCK, id})) {}
+      blocks(row, std::vector<PushBoxes::Block>(column, {VOID_BLOCK, id})),
+      pois(),
+      isInMap(0),
+      isMetaMap(0),
+      pos(),
+      infPoses(),
+      epsPoses() {}
 
 Map& MapManager::Shot::getMapById(std::string id) {
     for (auto& x : maps)
@@ -67,27 +93,46 @@ Block& MapManager::Shot::getBlockByPos(BlockPosition pos) {
     return getMapById(pos.map_id).blocks[pos.x][pos.y];
 }
 
-std::string MapManager::Shot::containMapWithVoid(std::string map_id) {
-    std::string meta_map_id = "Void_" + map_id;
+const Block& MapManager::Shot::getBlockByPos(BlockPosition pos) const {
+    return getMapById(pos.map_id).blocks[pos.x][pos.y];
+}
+
+std::string MapManager::Shot::containBlockWithMeta(Block ref) {
+    std::string meta_map_id;
+    if (ref.getBlockType() == MAP_BLOCK) {
+        meta_map_id = "Meta_" + ref.inner_map_id;
+    } else if (ref.getBlockType() == INF_BLOCK) {
+        meta_map_id =
+            "Meta_" + ref.inner_map_id + "^" + std::to_string(ref.inf_level);
+    }
     addNewMap(9, 9, meta_map_id);
     Map& meta_map = getMapById(meta_map_id);
+    meta_map.isMetaMap = 1;
     for (size_t i = 0; i < 9; i++) {
         meta_map.blocks[0][i].setBlockType(WALL_BLOCK);
         meta_map.blocks[8][i].setBlockType(WALL_BLOCK);
         meta_map.blocks[i][0].setBlockType(WALL_BLOCK);
         meta_map.blocks[i][8].setBlockType(WALL_BLOCK);
     }
-    Map& map = getMapById(map_id);
-    map.pos = {4, 4, meta_map_id};
-    map.isInMap = 1;
-    meta_map.blocks[4][4].setBlockType(MAP_BLOCK);
-    meta_map.blocks[4][4].inner_map_id = map_id;
+    Map& map = getMapById(ref.inner_map_id);
+    if (ref.getBlockType() == MAP_BLOCK) {
+        map.pos = {4, 4, meta_map_id};
+        map.isInMap = 1;
+    } else if (ref.getBlockType() == INF_BLOCK) {
+        map.infPoses[ref.inf_level - 1] = {4, 4, meta_map_id};
+    }
+    meta_map.blocks[4][4] = ref;
+
     return meta_map_id;
 }
 
-EnterPosition MapManager::Shot::getBlockOutside(EnterPosition enter_pos) {
+std::string MapManager::Shot::containMapWithMeta(std::string map_id) {
+    return containBlockWithMeta(Block(MAP_BLOCK, map_id));
+}
+
+FixedPosition MapManager::Shot::getPosOutside(FixedPosition enter_pos) {
     Map& map = getMapById(enter_pos.pos.map_id);
-    if (!map.isInMap) containMapWithVoid(enter_pos.pos.map_id);
+    if (!map.isInMap) containMapWithMeta(enter_pos.pos.map_id);
 
     enter_pos.isFilped ^= getBlockByPos(map.pos).isFliped;
 
@@ -99,45 +144,50 @@ EnterPosition MapManager::Shot::getBlockOutside(EnterPosition enter_pos) {
             1.0 / map.row * (enter_pos.pos.x + enter_pos.getRatio());
     }
     enter_pos.pos = map.pos;
-    return getNearbyBlock(enter_pos);
+    return enter_pos;
 }
 
-EnterPosition MapManager::Shot::getNearbyBlock(EnterPosition enter_pos) {
-    EnterPosition targetPos = enter_pos;
-    Map& map = getMapById(enter_pos.pos.map_id);
-    if (enter_pos.getDirection() == UP) {
-        if (targetPos.pos.x > 0) {
-            targetPos.pos.x--;
+FixedPosition MapManager::Shot::getNearbyBlock(FixedPosition enter_pos) {
+    auto is_out = [&](FixedPosition pos) {
+        Map& map = getMapById(pos.pos.map_id);
+        if (pos.getDirection() == UP) {
+            return pos.pos.x == 0;
+        } else if (pos.getDirection() == DOWN) {
+            return pos.pos.x + 1 == map.row;
+        } else if (pos.getDirection() == LEFT) {
+            return pos.pos.y == 0;
         } else {
-            targetPos = getBlockOutside(enter_pos);
+            return pos.pos.y + 1 == map.column;
         }
-    } else if (enter_pos.getDirection() == DOWN) {
-        if (targetPos.pos.x + 1 < map.row) {
-            targetPos.pos.x++;
-        } else {
-            targetPos = getBlockOutside(enter_pos);
-        }
-    } else if (enter_pos.getDirection() == LEFT) {
-        if (targetPos.pos.y > 0) {
-            targetPos.pos.y--;
-        } else {
-            targetPos = getBlockOutside(enter_pos);
-        }
+    };
+
+    std::set<FixedPosition> set;
+    FixedPosition targetPos = enter_pos;
+
+    while (is_out(targetPos)) {
+        if (!set.insert(targetPos).second)
+            targetPos = getInfinityBlock(targetPos);
+        else
+            targetPos = getPosOutside(targetPos);
+    }
+
+    if (targetPos.getDirection() == UP) {
+        targetPos.pos.x--;
+    } else if (targetPos.getDirection() == DOWN) {
+        targetPos.pos.x++;
+    } else if (targetPos.getDirection() == LEFT) {
+        targetPos.pos.y--;
     } else {
-        if (targetPos.pos.y + 1 < map.column) {
-            targetPos.pos.y++;
-        } else {
-            targetPos = getBlockOutside(enter_pos);
-        }
+        targetPos.pos.y++;
     }
 
     return targetPos;
 }
 
-EnterPosition MapManager::Shot::getAccessPosition(EnterPosition old_enter_pos) {
+FixedPosition MapManager::Shot::getAccessPosition(FixedPosition old_enter_pos) {
     Block& targetBlock = getBlockByPos(old_enter_pos.pos);
     Map& map = getMapById(targetBlock.inner_map_id);
-    EnterPosition enter_pos({0, 0, targetBlock.inner_map_id},
+    FixedPosition enter_pos({0, 0, targetBlock.inner_map_id},
                             old_enter_pos.direction, old_enter_pos.ratio,
                             targetBlock.isFliped ^ old_enter_pos.isFilped);
 
@@ -174,7 +224,7 @@ bool MapManager::Shot::isWin() const {
     return (poi_num != 0 && poi_num == achieved_num);
 }
 
-int MapManager::Shot::moveBlock(EnterPosition targetPos, EnterPosition fromPos,
+int MapManager::Shot::moveBlock(FixedPosition targetPos, FixedPosition fromPos,
                                 Block fromBlock) {
     Block& targetRef = getBlockByPos(targetPos.pos);
     Block& fromRef = getBlockByPos(fromPos.pos);
@@ -189,6 +239,9 @@ int MapManager::Shot::moveBlock(EnterPosition targetPos, EnterPosition fromPos,
     }
     if (fromBlock.getBlockType() == MAP_BLOCK) {
         getMapById(fromBlock.inner_map_id).pos = targetPos.pos;
+    } else if (fromBlock.getBlockType() == INF_BLOCK) {
+        getMapById(fromBlock.inner_map_id).infPoses[fromBlock.inf_level - 1] =
+            targetPos.pos;
     }
 
     if (fromRef.moving_trend == NODIRECTION) {
@@ -199,7 +252,8 @@ int MapManager::Shot::moveBlock(EnterPosition targetPos, EnterPosition fromPos,
     }
 }
 
-void MapManager::Shot::transferPlayer(EnterPosition targetPos, EnterPosition fromPos) {
+void MapManager::Shot::transferPlayer(FixedPosition targetPos,
+                                      FixedPosition fromPos) {
     Block& targetRef = getBlockByPos(targetPos.pos);
     Block& fromRef = getBlockByPos(fromPos.pos);
 
@@ -209,36 +263,66 @@ void MapManager::Shot::transferPlayer(EnterPosition targetPos, EnterPosition fro
     playerPoses.at(fromRef.playerIndex) = targetPos.pos;
 }
 
+FixedPosition MapManager::Shot::getInfinityBlock(FixedPosition fixed_pos) {
+    Block& ref = getBlockByPos(fixed_pos.pos);
+    Map& map = getMapById(ref.inner_map_id);
+    long long inf_level;
+    if (ref.getBlockType() == MAP_BLOCK) {
+        inf_level = 1;
+    } else if (ref.getBlockType() == INF_BLOCK) {
+        inf_level = ref.inf_level + 1;
+    }
+
+    assert(inf_level > 0);
+
+    if (map.infPoses.size() < inf_level) {
+        map.infPoses.emplace_back();
+        containBlockWithMeta(Block(INF_BLOCK, ref.inner_map_id, inf_level));
+    }
+
+    fixed_pos.pos = map.infPoses[inf_level - 1];
+    fixed_pos.isFilped ^= getBlockByPos(fixed_pos.pos).isFliped;
+    return fixed_pos;
+}
+
+bool MapManager::Shot::isAccessible(BlockPosition pos) const {
+    const Map& map = getMapById(pos.map_id);
+    const Block& ref = getBlockByPos(pos);
+    return ref.getBlockType().isAccessible && !map.isMetaMap;
+}
+
 // 返回值: 3 成功腾出这个位置; 2 inBlock 未能成功腾出这个位置,
 // 但是有其他变化; 1 未能成功腾出这个位置, 且没有其他变化, 但是有备选位置;
 // 0 未能成功腾出这个位置, 且没有其他变化
-std::pair<int, EnterPosition> MapManager::Shot::move(EnterPosition enter_pos, bool force_move) {
+std::pair<int, FixedPosition> MapManager::Shot::move(FixedPosition enter_pos,
+                                                     bool force_move) {
     assert(enter_pos.direction != NODIRECTION);
     Block& ref = getBlockByPos(enter_pos.pos);
     Block blockBackup = ref;
 
-    if (ref.getBlockType().isReplaceable) return {3, EnterPosition()};
+    if (ref.getBlockType().isReplaceable) return {3, FixedPosition()};
 
-    if (!force_move && !ref.getBlockType().isMoveable) return {0, EnterPosition()};
+    if (!force_move && !ref.getBlockType().isMoveable)
+        return {0, FixedPosition()};
 
     if (ref.moving_trend != NODIRECTION &&
         ref.moving_trend != enter_pos.getDirection()) {
-        if (ref.getBlockType().isAccessible)
+        if (isAccessible(enter_pos.pos))
             return {1, getAccessPosition(enter_pos)};
-        return {0, EnterPosition()};
+        return {0, FixedPosition()};
     }
 
     if (ref.moving_trend == enter_pos.getDirection()) {
-        return {3, EnterPosition()};
+        return {3, FixedPosition()};
     }
 
     ref.moving_trend = enter_pos.getDirection();
 
     int flag = 1;
 
-    std::stack<EnterPosition> targetPoses;
+    std::stack<FixedPosition> targetPoses;
     targetPoses.push(
-        getNearbyBlock(EnterPosition(enter_pos.pos, enter_pos.getDirection())));
+        getNearbyBlock(FixedPosition(enter_pos.pos, enter_pos.getDirection())));
 
     while (flag == 1) {
         auto ret = move(targetPoses.top());
@@ -250,35 +334,35 @@ std::pair<int, EnterPosition> MapManager::Shot::move(EnterPosition enter_pos, bo
 
     if (flag == 3) {
         return {moveBlock(targetPoses.top(), enter_pos, blockBackup),
-                EnterPosition()};
+                FixedPosition()};
     }
 
     if (flag == 2) {
         ref.moving_trend = NODIRECTION;
-        return {2, EnterPosition()};
+        return {2, FixedPosition()};
     }
 
     assert(flag == 0);
 
-    EnterPosition accessPos, takeupPos;
+    FixedPosition swallowPos, takeupPos;
     while (!targetPoses.empty()) {
-        if (!accessPos.vaild &&
-            getBlockByPos(targetPoses.top().pos).getBlockType().isMoveable)
-            accessPos = targetPoses.top();
-        if (!takeupPos.vaild &&
-            getBlockByPos(targetPoses.top().pos).playerStatus == 1)
+        Block& tempRef = getBlockByPos(targetPoses.top().pos);
+        if (!swallowPos.vaild && tempRef.getBlockType().isMoveable &&
+            tempRef.moving_trend == NODIRECTION)
+            swallowPos = targetPoses.top();
+        if (!takeupPos.vaild && tempRef.playerStatus == 1)
             takeupPos = targetPoses.top();
         targetPoses.pop();
     }
 
-    if (flag == 0 && accessPos.vaild) {
-        Block& targetRef = getBlockByPos(accessPos.pos);
+    if (flag == 0 && swallowPos.vaild) {
+        Block& targetRef = getBlockByPos(swallowPos.pos);
         if (targetRef.getBlockType().isMoveable &&
-            ref.getBlockType().isAccessible) {
+            isAccessible(enter_pos.pos)) {
             Block targetBlock = targetRef;
             targetRef.moving_trend = inverseDirection(enter_pos.getDirection());
-            EnterPosition innerPos = getAccessPosition(
-                EnterPosition(enter_pos.pos,
+            FixedPosition innerPos = getAccessPosition(
+                FixedPosition(enter_pos.pos,
                               inverseDirection(enter_pos.getDirection()), 0.5));
             flag = 1;
             while (flag == 1) {
@@ -289,18 +373,17 @@ std::pair<int, EnterPosition> MapManager::Shot::move(EnterPosition enter_pos, bo
                     flag = ret.first;
             }
             if (flag == 3) {
-                flag = moveBlock(innerPos, accessPos, targetBlock);
+                flag = moveBlock(innerPos, swallowPos, targetBlock);
                 if (flag == 3) {
-                    return {
-                        moveBlock(accessPos, enter_pos, blockBackup),
-                        EnterPosition()};
+                    return {moveBlock(swallowPos, enter_pos, blockBackup),
+                            FixedPosition()};
                 }
             }
             targetRef.moving_trend = NODIRECTION;
         }
     }
 
-    if(flag == 0 && ref.playerStatus == 2 && takeupPos.vaild) {
+    if (flag == 0 && ref.playerStatus == 2 && takeupPos.vaild) {
         transferPlayer(takeupPos, enter_pos);
         flag = 2;
     }
@@ -309,10 +392,10 @@ std::pair<int, EnterPosition> MapManager::Shot::move(EnterPosition enter_pos, bo
 
     ref.moving_trend = NODIRECTION;
 
-    if (flag == 0 && ref.getBlockType().isAccessible)
+    if (flag == 0 && isAccessible(enter_pos.pos))
         return {1, getAccessPosition(enter_pos)};
 
-    return {flag, EnterPosition()};
+    return {flag, FixedPosition()};
 }
 
 std::string MapManager::Shot::addNewMap(size_t row, size_t column) {
@@ -368,7 +451,7 @@ bool MapManager::movePlayer(Direction direction) {
     Shot temp_shot = _shots.top();
     int flag = 0;
     for (auto x : temp_shot.playerPoses) {
-        flag |= temp_shot.move(EnterPosition(x, direction), 1).first;
+        flag |= temp_shot.move(FixedPosition(x, direction), 1).first;
     }
     if (flag & 2) {
         isWin = temp_shot.isWin();

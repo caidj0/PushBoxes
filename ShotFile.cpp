@@ -56,7 +56,23 @@ MapManager::Shot ShotFile::read(std::string path) {
                            (str[0] == ')' && str[str.length() - 1] == '(')) {
                     std::string map_block_id =
                         str.substr(0, str.length() - 1).substr(1);
-                    map.blocks[x][y] = Block(CLONE_BLOCK, map_block_id);
+                    long long inf_level = 0;
+                    if (map_block_id[map_block_id.length() - 1] == '}') {
+                        inf_level = std::stoull(
+                            map_block_id.substr(0, map_block_id.length() - 1)
+                                .substr(map_block_id.find_last_of('{') + 1));
+                        map_block_id = map_block_id.substr(
+                            0, map_block_id.find_last_of('{'));
+                    }
+                    if (inf_level == 0) {
+                        map.blocks[x][y] = Block(CLONE_BLOCK, map_block_id);
+                    } else if (inf_level > 0) {
+                        map.blocks[x][y] =
+                            Block(INF_BLOCK, map_block_id, inf_level);
+                        if (map.infPoses.size() < inf_level)
+                            map.infPoses.resize(inf_level);
+                        map.infPoses[inf_level - 1] = {x, y, id};
+                    }
                     map.blocks[x][y].isFliped = (str[0] == ')');
                 } else {
                     map.blocks[x][y].setBlockType(getBlockByName(str));
@@ -115,6 +131,16 @@ bool ShotFile::write(std::string path, const MapManager::Shot& shot) {
                         f << "(" << map.blocks[x][y].inner_map_id << ")";
                     else
                         f << ")" << map.blocks[x][y].inner_map_id << "(";
+                } else if (map.blocks[x][y].getBlockType() == INF_BLOCK) {
+                    if (map.blocks[x][y].isFliped)
+                        f << "(" << map.blocks[x][y].inner_map_id << "{"
+                          << std::to_string(map.blocks[x][y].inf_level) << "}"
+                          << ")";
+                    else
+                        f << ")" << map.blocks[x][y].inner_map_id << "{"
+                          << std::to_string(map.blocks[x][y].inf_level) << "}"
+                          << "(";
+
                 } else {
                     f << map.blocks[x][y].getBlockType().name;
                 }

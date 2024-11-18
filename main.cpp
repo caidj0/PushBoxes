@@ -3,7 +3,6 @@
 #include <string>
 
 #include "Block.h"
-#include "Blocks.h"
 #include "Map.h"
 #include "Screen.h"
 
@@ -37,7 +36,7 @@ void spin() {
 int main(int, char**) {
     PushBoxes::screenInit();
 
-    mapManager.readShot("Wall_12.sf");
+    mapManager.readShot("test_7.sf");
 
     spin();
 
